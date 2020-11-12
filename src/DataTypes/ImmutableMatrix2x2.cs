@@ -9,23 +9,41 @@ using Extreme.Mathematics;
 namespace MatrixSolver.DataTypes
 {
     /// <summary>
-    /// A 2x2 Matrix
+    /// A 2x2 Matrix which is Immutable.
     /// </summary>
-    public class Matrix2x2
+    public class ImmutableMatrix2x2 : IMatrix2x2
     {
-        public BigRational[,] UnderlyingValues { get; }
+        /// <summary>
+        /// The underlying matrix values
+        /// </summary>
+        public IReadOnlyTwoDimensionalArray<BigRational> UnderlyingValues { get; }
         private const int Order = 2;
 
-        public Matrix2x2(BigRational[,] values)
+        public ImmutableMatrix2x2(BigRational[,] values)
         {
-            if (values.Length != 4) throw new ArgumentException($"Expected 4 values, but found {values.Length}");
-            UnderlyingValues = values;
+            if (values.GetLongLength(0) != Order || values.GetLongLength(1) != Order)
+            {
+                throw new ArgumentException("Could not create matrix as values provided were not of size 2x2");
+            }
+            // Check no null values
+            for (int i = 0; i < Order; i++)
+            {
+                for (int j = 0; j < Order; j++)
+                {
+                    if (values[i, j] == null)
+                    {
+                        throw new ArgumentException($"Element [{i},{j}] was null");
+                    }
+                }
+            }
+            // TODO: Might want to Clone the array
+            UnderlyingValues = new TwoDimensionalArray<BigRational>(values);
         }
 
         /// <summary>
-        /// Returns a new vector which is the sum of two vectors together
+        /// Returns a new <see cref="ImmutableMatrix2x2" /> which is the sum of this and another <see cref="ImmutableMatrix2x2" />
         /// </summary>
-        public Matrix2x2 Add(Matrix2x2 right)
+        public ImmutableMatrix2x2 Add(IMatrix2x2 right)
         {
             var values = new BigRational[Order, Order];
             for (int rowIndex = 0; rowIndex < Order; rowIndex++)
@@ -35,29 +53,13 @@ namespace MatrixSolver.DataTypes
                     values[rowIndex, columnIndex] = this.UnderlyingValues[rowIndex, columnIndex] + right.UnderlyingValues[rowIndex, columnIndex];
                 }
             }
-            return new Matrix2x2(values);
+            return new ImmutableMatrix2x2(values);
         }
 
         /// <summary>
-        /// Returns a new vector which is equal to this vector minus anright vector
+        /// Returns a new <see cref="ImmutableMatrix2x2" /> which is the product of this and another <see cref="ImmutableMatrix2x2" />
         /// </summary>
-        public Matrix2x2 Subtract(Matrix2x2 right)
-        {
-            var values = new BigRational[Order, Order];
-            for (int rowIndex = 0; rowIndex < Order; rowIndex++)
-            {
-                for (int columnIndex = 0; columnIndex < Order; columnIndex++)
-                {
-                    values[rowIndex, columnIndex] = this.UnderlyingValues[rowIndex, columnIndex] - right.UnderlyingValues[rowIndex, columnIndex];
-                }
-            }
-            return new Matrix2x2(values);
-        }
-
-        /// <summary>
-        /// Returns a new vector which is equal to this vector minus anright vector
-        /// </summary>
-        public Matrix2x2 Multiply(Matrix2x2 right)
+        public ImmutableMatrix2x2 Multiply(IMatrix2x2 right)
         {
             var values = new BigRational[Order, Order];
 
@@ -75,10 +77,14 @@ namespace MatrixSolver.DataTypes
                 }
             }
 
-            return new Matrix2x2(values);
+            return new ImmutableMatrix2x2(values);
         }
 
-        public Vector2D Multiply(Vector2D right)
+        /// <summary>
+        /// Multiply the matrix by a given vector.
+        /// </summary>
+        /// <returns>A new <see cref="ImmutableVector2D"/> with the result of the computation</returns>
+        public ImmutableVector2D Multiply(ImmutableVector2D right)
         {
             var vector = new BigRational[Order];
 
@@ -91,10 +97,15 @@ namespace MatrixSolver.DataTypes
                 }
                 vector[rowIndex] = value;
             }
-            return new Vector2D(vector);
+            return new ImmutableVector2D(vector);
         }
 
-        public Matrix2x2 Pow(BigInteger value)
+        /// <summary>
+        /// Evaluates the matrix to a given power.
+        /// Throws if the power is negative and the determinant is zero.
+        /// </summary>
+        /// <returns>A new <see cref="ImmutableMatrix2x2"/> representing the result of the computation</returns>
+        public ImmutableMatrix2x2 Pow(BigInteger value)
         {
             if (value < 0)
             {
@@ -117,7 +128,12 @@ namespace MatrixSolver.DataTypes
             return matrix;
         }
 
-        public Matrix2x2 Inverse()
+        /// <summary>
+        /// Calculates the Inverse of the matrix. 
+        /// Throws if the matrix has determinant zero.
+        /// </summary>
+        /// <returns>A new <see cref="ImmutableMatrix2x2"/> representing the result of the computation</returns>
+        public ImmutableMatrix2x2 Inverse()
         {
             var det = Determinant();
             if (det == 0)
@@ -129,7 +145,15 @@ namespace MatrixSolver.DataTypes
             inverseMatrix[0, 1] = -UnderlyingValues[0, 1] / det;
             inverseMatrix[1, 0] = -UnderlyingValues[1, 0] / det;
             inverseMatrix[1, 1] = UnderlyingValues[0, 0] / det;
-            return new Matrix2x2(inverseMatrix);
+            return new ImmutableMatrix2x2(inverseMatrix);
+        }
+
+        /// <summary>
+        /// Calculates the determinant of the matrix
+        /// </summary>
+        public BigRational Determinant()
+        {
+            return this.UnderlyingValues[0, 0] * this.UnderlyingValues[1, 1] - this.UnderlyingValues[0, 1] * this.UnderlyingValues[1, 0];
         }
 
         public override string ToString()
@@ -157,7 +181,22 @@ namespace MatrixSolver.DataTypes
             return returnString;
         }
 
-        public bool Equals(Matrix2x2 matrix)
+        public override int GetHashCode()
+        {
+            return this.UnderlyingValues.GetHashCode();
+        }
+
+        public override bool Equals(object? obj)
+        {
+            var objAsMatrix = obj as IMatrix2x2;
+            if (objAsMatrix is null)
+            {
+                return false;
+            }
+            return Equals(objAsMatrix);
+        }
+
+        public bool Equals(IMatrix2x2 matrix)
         {
             if (matrix.UnderlyingValues.Length != this.UnderlyingValues.Length)
             {
@@ -176,42 +215,32 @@ namespace MatrixSolver.DataTypes
             return true;
         }
 
-        public BigRational Determinant()
-        {
-            return this.UnderlyingValues[0, 0] * this.UnderlyingValues[1, 1] - this.UnderlyingValues[0, 1] * this.UnderlyingValues[1, 0];
-        }
-
-        public static Matrix2x2 operator +(Matrix2x2 left, Matrix2x2 right)
+        public static ImmutableMatrix2x2 operator +(ImmutableMatrix2x2 left, IMatrix2x2 right)
         {
             return left.Add(right);
         }
 
-        public static Matrix2x2 operator -(Matrix2x2 left, Matrix2x2 right)
-        {
-            return left.Subtract(right);
-        }
-
-        public static Matrix2x2 operator *(Matrix2x2 left, Matrix2x2 right)
+        public static ImmutableMatrix2x2 operator *(ImmutableMatrix2x2 left, IMatrix2x2 right)
         {
             return left.Multiply(right);
         }
 
-        public static Vector2D operator *(Matrix2x2 left, Vector2D right)
+        public static ImmutableVector2D operator *(ImmutableMatrix2x2 left, ImmutableVector2D right)
         {
             return left.Multiply(right);
         }
 
-        public static Matrix2x2 operator ^(Matrix2x2 left, BigInteger right)
+        public static ImmutableMatrix2x2 operator ^(ImmutableMatrix2x2 left, BigInteger right)
         {
             return left.Pow(right);
         }
 
-        public static bool operator ==(Matrix2x2 left, Matrix2x2 right)
+        public static bool operator ==(ImmutableMatrix2x2 left, ImmutableMatrix2x2 right)
         {
             return Object.ReferenceEquals(left, right) || left.Equals(right);
         }
 
-        public static bool operator !=(Matrix2x2 left, Matrix2x2 right)
+        public static bool operator !=(ImmutableMatrix2x2 left, ImmutableMatrix2x2 right)
         {
             return !Object.ReferenceEquals(left, right) && !left.Equals(right);
         }

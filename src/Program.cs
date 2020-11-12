@@ -15,9 +15,10 @@ namespace MatrixSolver
             var file = args[0];
             var json = File.ReadAllText(file);
             var data = JsonConvert.DeserializeObject<InputData>(json);
-            var vectorX = new Vector2D(data.VectorX);
-            var vectorY = new Vector2D(data.VectorY);
-            var matrices = data.Matrices.Select(m => new Matrix2x2(As2DArray(m, 2, 2))).ToArray();
+            data.ThrowIfNull();
+            var vectorX = new ImmutableVector2D(data.VectorX);
+            var vectorY = new ImmutableVector2D(data.VectorY);
+            var matrices = data.Matrices.Select(m => new ImmutableMatrix2x2(As2DArray(m, 2, 2))).ToArray();
             // Solve equation
             MatrixEquationSolutionFinder.TrySolveVectorReachabilityProblem(matrices, vectorX, vectorY);
         }

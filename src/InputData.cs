@@ -1,4 +1,5 @@
 
+using System;
 using Extreme.Mathematics;
 
 namespace MatrixSolver
@@ -8,8 +9,15 @@ namespace MatrixSolver
     /// </summary>
     public class InputData
     {
-        public BigRational[][][] Matrices { get; set; }
-        public BigRational[] VectorX { get; set; }
-        public BigRational[] VectorY { get; set; }
+        public BigRational[][][] Matrices { get; set; } = null!;
+        public BigRational[] VectorX { get; set; } = null!;
+        public BigRational[] VectorY { get; set; } = null!;
+
+        public void ThrowIfNull()
+        {
+            if(Matrices is null) throw new ArgumentNullException(nameof(Matrices));
+            if(VectorX is null) throw new ArgumentNullException(nameof(Matrices));
+            if(VectorY is null) throw new ArgumentNullException(nameof(Matrices));
+        }
     }
 }
