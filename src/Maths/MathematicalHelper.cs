@@ -9,10 +9,12 @@ namespace MatrixSolver.Maths
     public static class MathematicalHelper
     {
         /// <summary>
-        /// Implementation of the Euclidean algorithm
+        /// Implementation of the Euclidean algorithm that finds the Greatest Common Divisor of two integers
         /// </summary>
         public static BigInteger GCD(BigInteger a, BigInteger b)
         {
+            a = BigInteger.Abs(a);
+            b = BigInteger.Abs(b);
             while (a != 0 && b != 0)
             {
                 if (a > b)
@@ -29,7 +31,8 @@ namespace MatrixSolver.Maths
         }
 
         /// <summary>
-        /// Returns gcd(a,b), s,t, such that as + bt = gcd(a, b)
+        /// Implementation of the Extended Euclidean algorithm.
+        /// Returns (gcd(a,b), s, t) such that as + bt = gcd(a, b)
         /// </summary>
         public static (BigInteger gcd, BigInteger s, BigInteger t) ExtendedEuclideanAlgorithm(BigInteger a, BigInteger b)
         {
@@ -59,36 +62,56 @@ namespace MatrixSolver.Maths
                 t.RemoveAt(0);
             }
 
+            // If GCD found is negative, flip the resulting number. GCD should always be positive
+            if (a < 0)
+            {
+                a = -a;
+                s[0] = -s[0];
+                t[0] = -t[0];
+            }
+
             return (a, s[0], t[0]);
         }
 
         /// <summary>
         /// Converts a matrix in SL(2,Z) to a form using only generator matrices. Returns a list of matrices made up of only S and R that when mutliplied in order 
         /// are equivelent to the original matrix.
-        /// Based on https://kconrad.math.uconn.edu/blurbs/grouptheory/SL(2,Z).pdf
+        /// Based on the algorithm described here: https://kconrad.math.uconn.edu/blurbs/grouptheory/SL(2,Z).pdf
         /// </summary>
-        public static List<GeneratorMatrixIdentifier> ConvertMatrixToGeneratorFormAsString(Matrix2x2 matrix)
+        public static List<GeneratorMatrixIdentifier> ConvertMatrixToGeneratorFormAsString(ImmutableMatrix2x2 matrix)
         {
-            var originalMatrix = matrix;
+            // The process is 3 steps. First convert the matrix to use the T and S matrices.
+            // Then T, T^-1 and S^-1 need to be replaced to use S,R,X
+            // Finally, simplify the expression to canonical form
+            var matrixProduct = ConvertMatrixToUseTAndSGeneratorMatrices(matrix)
+                .ReplaceTAndInverseWithStandardGenerators()
+                .SimplifyToCanonicalForm();
+            return matrixProduct;
+        }
+
+        public static List<GeneratorMatrixIdentifier> ConvertMatrixToUseTAndSGeneratorMatrices(ImmutableMatrix2x2 matrix)
+        {
             // First convert it to use T and S
-            List<GeneratorMatrixIdentifier> matrices = new List<GeneratorMatrixIdentifier>();
-
-            var a = matrix.UnderlyingValues[0, 0].Numerator;
-            var c = matrix.UnderlyingValues[1, 0].Numerator;
-            if (BigInteger.Abs(a) < BigInteger.Abs(c))
+            List<GeneratorMatrixIdentifier> matrixProduct = new List<GeneratorMatrixIdentifier>();
+            // Setup aliases for a and c
+            Func<BigInteger> a = () => matrix.UnderlyingValues[0, 0].Numerator;
+            Func<BigInteger> c = () => matrix.UnderlyingValues[1, 0].Numerator;
+            Action PerformSSwitchIfNeeded = () =>
             {
-                matrix = Constants.Matrices.S * matrix;
-                matrices.Add(GeneratorMatrixIdentifier.SInverse);
+                if (BigInteger.Abs(a()) < BigInteger.Abs(c()))
+                {
+                    matrix = Constants.Matrices.S * matrix;
+                    matrixProduct.Add(GeneratorMatrixIdentifier.SInverse);
+                }
+            };
 
-                a = matrix.UnderlyingValues[0, 0].Numerator;
-                c = matrix.UnderlyingValues[1, 0].Numerator;
-            }
+            PerformSSwitchIfNeeded();
 
             // Continue until the lower left entry is 0
-            while (c != 0)
+            while (c() != 0)
             {
-                var quotient = a / c;
-                var remainder = a - quotient * c;
+                var quotient = a() / c();
+                var remainder = a() - quotient * c();
 
                 var targetMatrix = Constants.Matrices.T.Pow(-quotient);
                 var targetMatrixIdentifier = GeneratorMatrixIdentifier.TInverse;
@@ -102,31 +125,21 @@ namespace MatrixSolver.Maths
 
                 for (int i = 0; i < BigInteger.Abs(quotient); i++)
                 {
-                    matrices.Add(targetMatrixIdentifier);
+                    matrixProduct.Add(targetMatrixIdentifier);
                 }
 
-                // Perform an S switch.
-                // Divide a by c
-                a = matrix.UnderlyingValues[0, 0].Numerator;
-                c = matrix.UnderlyingValues[1, 0].Numerator;
-                if (BigInteger.Abs(a) < BigInteger.Abs(c))
-                {
-                    matrix = Constants.Matrices.S * matrix;
-                    matrices.Add(GeneratorMatrixIdentifier.SInverse);
-
-                    a = matrix.UnderlyingValues[0, 0].Numerator;
-                    c = matrix.UnderlyingValues[1, 0].Numerator;
-                }
+                PerformSSwitchIfNeeded();
             }
             // The matrix should now be in the form [[+-1, m], [0, +-1]].
-            // TODO: Remove unneccessary matrix multiplication after here.
+            // TODO: Potential optimisation - We shouldn't need to multiply the matrix further. We should be able to calculate the result
+            // from here.
             // Therefore it is either T^M or -T^-M = S^2*T^-M
             var sign = matrix.UnderlyingValues[0, 0].Numerator;
             if (sign == -1)
             {
                 // We need to add a minus to the front (I.e. X)
                 matrix = Constants.Matrices.X * matrix;
-                matrices.Add(GeneratorMatrixIdentifier.X);
+                matrixProduct.Add(GeneratorMatrixIdentifier.X);
             }
 
             var b = matrix.UnderlyingValues[0, 1].Numerator;
@@ -137,60 +150,57 @@ namespace MatrixSolver.Maths
             }
             for (int i = 0; i < BigInteger.Abs(b); i++)
             {
-                matrices.Add(targetMatrix2);
+                matrixProduct.Add(targetMatrix2);
             }
+            return matrixProduct;
+        }
 
-            // TODO: Remove unnecessary checks
-            matrix = Constants.Matrices.T.Pow(-b) * matrix;
-            
-            if(matrix != Constants.Matrices.I)
+        public static List<GeneratorMatrixIdentifier> ReplaceTAndInverseWithStandardGenerators(this List<GeneratorMatrixIdentifier> matrixProduct)
+        {
+            for (int i = matrixProduct.Count - 1; i >= 0; i--)
             {
-                throw new ApplicationException("Procedure did not convert6 correctly.");
-            }
-            if(!IsEqual(matrices, originalMatrix))
-            {
-                throw new ApplicationException("Procedure did not convert correctly.");
-            }
-            // Replace T and T^-1 with {S,R}*
-            for (int i = matrices.Count - 1; i >= 0; i--)
-            {
-                var element = matrices[i];
+                var element = matrixProduct[i];
                 if (element == GeneratorMatrixIdentifier.T || element == GeneratorMatrixIdentifier.TInverse || element == GeneratorMatrixIdentifier.SInverse)
                 {
-                    matrices.RemoveAt(i);
+                    matrixProduct.RemoveAt(i);
                     // Insert the replacement version with S/R/X
-                    matrices.InsertRange(i, Constants.Matrices.GeneratorMatrixIdentifierLookup[element]);
+                    matrixProduct.InsertRange(i, Constants.Matrices.GeneratorMatrixIdentifierLookup[element]);
                 }
             }
-            // Simplify:
+            return matrixProduct;
+        }
+
+        public static List<GeneratorMatrixIdentifier> SimplifyToCanonicalForm(this List<GeneratorMatrixIdentifier> matrixProduct)
+        {
             // First remove all the X's. Using the fact that X = -I we can remove any instances. 
-            // However, we may need to add an X for the sign at the front if an odd number have been removed
+            // However, we may need to add an X for the sign at the front if an odd number of X's are removed
             // The 'negative' variable will track whether the simplified matrix is -1 or 1 times the original matrix.
             bool negative = false;
-            for (int i = matrices.Count - 1; i >= 0; i--)
+            for (int i = matrixProduct.Count - 1; i >= 0; i--)
             {
-                var element = matrices[i];
+                var element = matrixProduct[i];
                 if (element == GeneratorMatrixIdentifier.X)
                 {
-                    matrices.RemoveAt(i);
+                    matrixProduct.RemoveAt(i);
                     negative = !negative;
                 }
             }
-            // Now simplify by removing instance of S^2 and T^3. This leverages the fact that S^2 = T^3 = X
-            int consecutiveCharacterCount = 0;
+            // Now simplify by removing instance of S^2 and T^3. This leverages the fact that S^2 = T^3 = X = -I
             var consecutiveCharacter = GeneratorMatrixIdentifier.X;
             bool changes = true;
             while (changes)
             {
+                int consecutiveCharacterCount = 0;
                 changes = false;
 
-                for (int i = matrices.Count - 1; i >= 0; i--)
+                for (int i = matrixProduct.Count - 1; i >= 0; i--)
                 {
                     bool remove = false;
-                    var element = matrices[i];
+                    var element = matrixProduct[i];
                     if (element != consecutiveCharacter)
                     {
                         consecutiveCharacterCount = 1;
+                        consecutiveCharacter = element;
                     }
                     else
                     {
@@ -199,7 +209,6 @@ namespace MatrixSolver.Maths
 
                     switch (element)
                     {
-                        // TODO: Double check this makes sense.
                         case GeneratorMatrixIdentifier.R:
                             if (consecutiveCharacterCount == 3)
                             {
@@ -221,9 +230,9 @@ namespace MatrixSolver.Maths
                         changes = true;
                         for (int j = 0; j < consecutiveCharacterCount; j++)
                         {
-                            matrices.RemoveAt(i);
-                            negative = !negative;
+                            matrixProduct.RemoveAt(i);
                         }
+                        negative = !negative;
                         consecutiveCharacterCount = 0;
                     }
                 }
@@ -231,27 +240,25 @@ namespace MatrixSolver.Maths
             // Finally, if an odd number of X's were removed, then add an X to the front
             if (negative)
             {
-                matrices.Insert(0, GeneratorMatrixIdentifier.X);
+                matrixProduct.Insert(0, GeneratorMatrixIdentifier.X);
             }
-
-            // TODO: Remove unnecessary check
-            if(!IsEqual(matrices, originalMatrix))
-            {
-                throw new ApplicationException($"Matrix {originalMatrix} was incorrectly translated to regular language.");
-            };
-            return matrices;
+            return matrixProduct;
         }
 
-        public static bool IsEqual(IReadOnlyCollection<GeneratorMatrixIdentifier> matrices, Matrix2x2 matrix)
+        /// <summary>
+        /// Verifies a matrix product is equal to a given matrix
+        /// TODO: Move this to the test project
+        /// </summary>
+        public static bool IsEqual(IReadOnlyCollection<GeneratorMatrixIdentifier> matrices, ImmutableMatrix2x2 matrix)
         {
             var workingMatrix = Constants.Matrices.I;
-            foreach(var matrixIdentifier in matrices)
+            foreach (var matrixIdentifier in matrices)
             {
                 var nextMatrix = Constants.Matrices.MatrixIdentifierDictionary[matrixIdentifier];
                 workingMatrix = workingMatrix * nextMatrix;
             }
 
-            if(!workingMatrix.Equals(matrix))
+            if (!workingMatrix.Equals(matrix))
             {
                 return false;
             }
