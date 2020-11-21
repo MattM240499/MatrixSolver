@@ -75,4 +75,9 @@ public static class Constants
             };
         }
     }
+
+    public static class RegularLanguage
+    {
+        public static char[] Symbols = new char[] { 'X', 'S', 'R' };
+    }
 }
