@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using Extreme.Mathematics;
 using MatrixSolver.DataTypes;
+using MatrixSolver.DataTypes.Automata;
 using MatrixSolver.Maths;
 using MatrixSolver.Maths.Extensions;
 
@@ -16,6 +17,7 @@ namespace MatrixSolver
         public static void TrySolveVectorReachabilityProblem(ImmutableMatrix2x2[] matrices, ImmutableVector2D vectorX, ImmutableVector2D vectorY)
         {
             // Validate input data
+            // TODO: Reorganise into subroutines to allow for unit testing.
             ValidateMatrixList(matrices);
             BigRational scalar = GetVectorScalar(vectorX, vectorY);
 
@@ -26,14 +28,14 @@ namespace MatrixSolver
             Console.WriteLine($"y =  {vectorY}");
             Console.WriteLine("-------------------------");
 
-            var scaledVectorX = vectorX * scalar;
-            var scaledVectorY = vectorY * scalar;
+            var scaledVectorX = scalar * vectorX;
+            var scaledVectorY = scalar * vectorY;
 
             Console.WriteLine($"ScaledX = {scaledVectorX}");
             Console.WriteLine($"ScaledY = {scaledVectorY}");
 
-            var Ax = CalculateAx(scaledVectorX);
-            var Ay = CalculateAx(scaledVectorY);
+            var Ax = CalculateMatrixA(scaledVectorX);
+            var Ay = CalculateMatrixA(scaledVectorY);
 
             Console.WriteLine($"Ax = {Ax}");
             Console.WriteLine($"Ay = {Ay}");
@@ -51,7 +53,7 @@ namespace MatrixSolver
             var AxInverse = Ax.Inverse();
             Console.WriteLine($"General solution is of the form: {Ay} * {Constants.Matrices.T}^t * {AxInverse}");
 
-            // Output some solutions ()
+            // Output some solutions
             for (int i = 0; i < 10; i++)
             {
                 var sol = Ay * (Constants.Matrices.T ^ i) * AxInverse;
@@ -70,23 +72,40 @@ namespace MatrixSolver
             var TAsGeneratorMatrices = Constants.Matrices.GeneratorMatrixIdentifierLookup[GeneratorMatrixIdentifier.T];
             var TInverseAsGeneratorMatrices = Constants.Matrices.GeneratorMatrixIdentifierLookup[GeneratorMatrixIdentifier.TInverse];
 
-            string matrixForm = String.Join("",
+            var matricesAsGeneratorMatrices = matrices.Select(m => MathematicalHelper.ConvertMatrixToGeneratorFormAsString(m));
+
+            // TODO: Can we optimise this?
+            string matrixSolutionForm = String.Join("",
                 AyAsGeneratorMatrices.Select(i => i.ToString())
                     .Append("(")
                     .Concat(TAsGeneratorMatrices.Select(i => i.ToString()))
                     .Append(")*")
                     .Concat(AxInverseAsGeneratorMatrices.Select(i => i.ToString()))
-                    .Append(" | ")
+                    .Append("|")
                     .Concat(AyAsGeneratorMatrices.Select(i => i.ToString()))
                     .Append("(")
                     .Concat(TInverseAsGeneratorMatrices.Select(i => i.ToString()))
                     .Append(")*")
                     .Concat(AyAsGeneratorMatrices.Select(i => i.ToString()))
             );
-            Console.WriteLine($"Solutions as a regular language as a regex are of the form: {matrixForm}");
+
+            string matrixProductForm = "(" +
+                    string.Join("|", 
+                    matricesAsGeneratorMatrices.Select(i => 
+                        String.Join("", i.Select(j => j.ToString())))
+                    )  +
+                    ")*";
+            Console.WriteLine($"Solutions of Mx = y as a regex are of the form: {matrixSolutionForm}");
+            Console.WriteLine($"Solution as a product of input matrices as a regex are of the form: {matrixProductForm}");
+
+            var solutionMatrixAutomaton = AutomatonUtil.RegexToAutomaton(matrixSolutionForm, Constants.RegularLanguage.Symbols);
+            var matrixProductAutomaton = AutomatonUtil.RegexToAutomaton(matrixProductForm, Constants.RegularLanguage.Symbols);
+
+            var dfa1 = solutionMatrixAutomaton.ToDFA();
+            var dfa2 = matrixProductAutomaton.ToDFA();
         }
 
-        private static ImmutableMatrix2x2 CalculateAx(ImmutableVector2D vector)
+        private static ImmutableMatrix2x2 CalculateMatrixA(ImmutableVector2D vector)
         {
             var euclideanAlgorithmValues = MathematicalHelper.ExtendedEuclideanAlgorithm(vector.UnderlyingVector[0].Numerator, vector.UnderlyingVector[1].Numerator);
             var matrix = new BigRational[2, 2];

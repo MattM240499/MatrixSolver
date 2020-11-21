@@ -89,9 +89,8 @@ namespace MatrixSolver.Maths
             return matrixProduct;
         }
 
-        public static List<GeneratorMatrixIdentifier> ConvertMatrixToUseTAndSGeneratorMatrices(ImmutableMatrix2x2 matrix)
+        private static List<GeneratorMatrixIdentifier> ConvertMatrixToUseTAndSGeneratorMatrices(ImmutableMatrix2x2 matrix)
         {
-            // First convert it to use T and S
             List<GeneratorMatrixIdentifier> matrixProduct = new List<GeneratorMatrixIdentifier>();
             // Setup aliases for a and c
             Func<BigInteger> a = () => matrix.UnderlyingValues[0, 0].Numerator;
