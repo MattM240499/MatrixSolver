@@ -3,6 +3,7 @@ using MatrixSolver.DataTypes.Automata;
 using System;
 using System.Linq;
 using MatrixSolver.DataTypes;
+using System.Collections.Generic;
 
 namespace MatrixSolver.Tests.DataTypes.Automata
 {
@@ -16,11 +17,12 @@ namespace MatrixSolver.Tests.DataTypes.Automata
         public void AddState_AddsState_IfIdUnique()
         {
             var automaton = new Automaton(_alphabet);
-            var stateIds = new[] { 1, 2, 3 };
+            var stateIds = new List<int>();
 
-            foreach (var id in stateIds)
+            for (int i = 0; i < 3; i++)
             {
-                automaton.AddState(id);
+                var stateId = automaton.AddState();
+                stateIds.Add(stateId);
             }
 
             var states = automaton.States;
@@ -39,13 +41,13 @@ namespace MatrixSolver.Tests.DataTypes.Automata
         {
             var automaton = new Automaton(_alphabet);
 
-            automaton.AddState(1, isGoalState: isGoalState, isStartState: isStartState);
+            int stateId = automaton.AddState(isGoalState: isGoalState, isStartState: isStartState);
             Assert.Single(automaton.States);
             Assert.Single(automaton.States);
             if (isStartState)
             {
                 Assert.Single(automaton.StartStates);
-                Assert.Contains(1, automaton.StartStates);
+                Assert.Contains(stateId, automaton.StartStates);
             }
             else
             {
@@ -54,7 +56,7 @@ namespace MatrixSolver.Tests.DataTypes.Automata
             if (isGoalState)
             {
                 Assert.Single(automaton.GoalStates);
-                Assert.Contains(1, automaton.GoalStates);
+                Assert.Contains(stateId, automaton.GoalStates);
             }
             else
             {
@@ -63,18 +65,9 @@ namespace MatrixSolver.Tests.DataTypes.Automata
         }
 
         [Fact]
-        public void AddState_Throws_IfStateIdNotUnique()
-        {
-            var automaton = new Automaton(_alphabet);
-
-            automaton.AddState(1);
-            Assert.Throws<InvalidOperationException>(() => automaton.AddState(1));
-        }
-
-        [Fact]
         public void AddTransition_AddsTransition_IfStatesInList()
         {
-            var stateIds = new[] { 1, 2, 3 };
+            var stateIds = new[] { 0, 1, 2 };
             var automaton = CreateEmptyAutomatonWithStates(stateIds);
 
             foreach (var stateIdFrom in stateIds)
@@ -89,17 +82,17 @@ namespace MatrixSolver.Tests.DataTypes.Automata
         [Fact]
         public void AddTransition_Throws_IfFromStateNotInList()
         {
-            var automaton = CreateEmptyAutomatonWithStates(new[] { 1, 2, 3 });
+            var automaton = CreateEmptyAutomatonWithStates(new[] { 0, 1, 2});
 
-            Assert.Throws<InvalidOperationException>(() => automaton.AddTransition(4, 1, _validSymbol));
+            Assert.Throws<InvalidOperationException>(() => automaton.AddTransition(3, 1, _validSymbol));
         }
 
         [Fact]
         public void AddTransition_Throws_IfToStateNotInList()
         {
-            var automaton = CreateEmptyAutomatonWithStates(new[] { 1, 2, 3 });
+            var automaton = CreateEmptyAutomatonWithStates(new[] { 0, 1, 2 });
 
-            Assert.Throws<InvalidOperationException>(() => automaton.AddTransition(1, 4, _validSymbol));
+            Assert.Throws<InvalidOperationException>(() => automaton.AddTransition(1, 3, _validSymbol));
         }
 
         [Fact]
@@ -179,7 +172,7 @@ namespace MatrixSolver.Tests.DataTypes.Automata
 
             foreach (var id in stateIds)
             {
-                automaton.AddState(id);
+                automaton.AddState();
             }
             return automaton;
         }
@@ -221,10 +214,10 @@ namespace MatrixSolver.Tests.DataTypes.Automata
             // Union
             automaton.AddTransition(0, 2, Automaton.Epsilon);
             automaton.AddTransition(0, 1, Automaton.Epsilon);
-            automaton.AddTransition(1,3, 'a');
-            automaton.AddTransition(2,4, 'b');
-            automaton.AddTransition(3,5, Automaton.Epsilon);
-            automaton.AddTransition(4,5, Automaton.Epsilon);
+            automaton.AddTransition(1, 3, 'a');
+            automaton.AddTransition(2, 4, 'b');
+            automaton.AddTransition(3, 5, Automaton.Epsilon);
+            automaton.AddTransition(4, 5, Automaton.Epsilon);
             // Kleene star
             automaton.AddTransition(6, 0, Automaton.Epsilon);
             automaton.AddTransition(6, 7, Automaton.Epsilon);
@@ -232,7 +225,7 @@ namespace MatrixSolver.Tests.DataTypes.Automata
             automaton.AddTransition(5, 7, Automaton.Epsilon);
 
             automaton.SetAsStartState(6);
-            automaton.SetAsGoalState(7);         
+            automaton.SetAsGoalState(7);
 
             return automaton;
         }

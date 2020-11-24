@@ -78,6 +78,9 @@ public static class Constants
 
     public static class RegularLanguage
     {
-        public static char[] Symbols = new char[] { 'X', 'S', 'R' };
+        public static char X = 'X';
+        public static char S = 'S';
+        public static char R = 'R';
+        public static char[] Symbols = new char[] { X, S, R };
     }
 }

@@ -4,6 +4,7 @@ using System.IO;
 using Newtonsoft.Json;
 using MatrixSolver.DataTypes;
 using Extreme.Mathematics;
+using System.Diagnostics;
 
 namespace MatrixSolver
 {
@@ -20,7 +21,10 @@ namespace MatrixSolver
             var vectorY = new ImmutableVector2D(data.VectorY);
             var matrices = data.Matrices.Select(m => new ImmutableMatrix2x2(As2DArray(m, 2, 2))).ToArray();
             // Solve equation
+            var sw = Stopwatch.StartNew();
             MatrixEquationSolutionFinder.TrySolveVectorReachabilityProblem(matrices, vectorX, vectorY);
+            sw.Stop();
+            Console.WriteLine($"Program completed in {sw.ElapsedMilliseconds}ms");
         }
 
         public static BigRational[,] As2DArray(BigRational[][] Array2D, int leftSize, int rightSize)

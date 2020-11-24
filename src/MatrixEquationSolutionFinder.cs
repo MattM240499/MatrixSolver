@@ -77,16 +77,14 @@ namespace MatrixSolver
             // TODO: Can we optimise this?
             string matrixSolutionForm = String.Join("",
                 AyAsGeneratorMatrices.Select(i => i.ToString())
-                    .Append("(")
+                    .Append("((")
                     .Concat(TAsGeneratorMatrices.Select(i => i.ToString()))
                     .Append(")*")
-                    .Concat(AxInverseAsGeneratorMatrices.Select(i => i.ToString()))
                     .Append("|")
-                    .Concat(AyAsGeneratorMatrices.Select(i => i.ToString()))
                     .Append("(")
                     .Concat(TInverseAsGeneratorMatrices.Select(i => i.ToString()))
-                    .Append(")*")
-                    .Concat(AyAsGeneratorMatrices.Select(i => i.ToString()))
+                    .Append(")*)")
+                    .Concat(AxInverseAsGeneratorMatrices.Select(i => i.ToString()))
             );
 
             string matrixProductForm = "(" +
@@ -103,6 +101,15 @@ namespace MatrixSolver
 
             var dfa1 = solutionMatrixAutomaton.ToDFA();
             var dfa2 = matrixProductAutomaton.ToDFA();
+
+            dfa1.UpdateDFAToCanonicalForm();
+            dfa2.UpdateDFAToCanonicalForm();
+
+            var canonicalDfa1 = dfa1.ToDFA();
+            var canonicalDfa2 = dfa2.ToDFA();
+
+            var intersectedDFA = canonicalDfa1.IntersectionWithDFA(canonicalDfa2);
+
         }
 
         private static ImmutableMatrix2x2 CalculateMatrixA(ImmutableVector2D vector)

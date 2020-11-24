@@ -5,7 +5,7 @@ VisualStudioVersion = 15.0.26124.0
 MinimumVisualStudioVersion = 15.0.26124.0
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MatrixSolver", "src\MatrixSolver.csproj", "{D4B3CE76-F509-42AC-A090-2625CC0463D0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MatrixSolver.Test", "test\MatrixSolver.Test.csproj", "{933D16E9-B9B3-44CD-9A50-E0265426371C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MatrixSolver.Tests", "test\MatrixSolver.Tests.csproj", "{933D16E9-B9B3-44CD-9A50-E0265426371C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
