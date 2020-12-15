@@ -20,7 +20,7 @@ namespace MatrixSolver.DataTypes.Automata
         private readonly HashSet<int> _states;
         /// <summary>An adjacency matrix of transition states</summary>
         private readonly TransitionMatrix<char> _transitionMatrix;
-        private readonly HashSet<char> _alphabet;
+        private readonly SortedSet<char> _alphabet;
         private int _statesIdCounter;
         /// <summary>
         /// The Transition Matrix representing all possible paths between states
@@ -38,7 +38,7 @@ namespace MatrixSolver.DataTypes.Automata
             _startStates = new HashSet<int>();
             _goalStates = new HashSet<int>();
             _transitionMatrix = new TransitionMatrix<char>();
-            _alphabet = new HashSet<char>(alphabet);
+            _alphabet = new SortedSet<char>(alphabet);
         }
 
         /// <summary>
@@ -183,19 +183,19 @@ namespace MatrixSolver.DataTypes.Automata
 
         public IReadOnlyCollection<int> GetStatesReachableFromStateWithSymbol(int state, char symbol, bool useEpsilonStatesFromInitial = true)
         {
-            var states = new HashSet<int>(){state};
+            var states = new HashSet<int>() { state };
             // Find all epsilon states from the original state.
-            if(useEpsilonStatesFromInitial)
+            if (useEpsilonStatesFromInitial)
             {
                 AddEpsilonStates(states, states);
             }
-            
+
             var symbolStates = new HashSet<int>();
             // Then add R transitions
-            foreach(var symbolState in states)
+            foreach (var symbolState in states)
             {
                 var reachableStates = TransitionMatrix.GetStates(state, symbol);
-                foreach(var reachableState in reachableStates)
+                foreach (var reachableState in reachableStates)
                 {
                     symbolStates.Add(reachableState);
                 }
@@ -257,7 +257,7 @@ namespace MatrixSolver.DataTypes.Automata
                     AddEpsilonStates(reachableStates, reachableStates);
                     // We have all reachable states with the given symbol. If a state in the new automata
                     // already exists for this combination, then we don't need to add a new state.
-                    if(reachableStates.Count == 0)
+                    if (reachableStates.Count == 0)
                     {
                         // Ignore the empty state
                         continue;
@@ -280,9 +280,9 @@ namespace MatrixSolver.DataTypes.Automata
         public Automaton IntersectionWithDFA(Automaton automaton)
         {
             // Check they have the same alphabet.
-            foreach(var symbol in automaton.Alphabet)
+            foreach (var symbol in automaton.Alphabet)
             {
-                if(!_alphabet.Contains(symbol))
+                if (!_alphabet.Contains(symbol))
                 {
                     throw new InvalidOperationException("Could not calculate the intersection as the alphabets were distinct");
                 }
@@ -297,39 +297,96 @@ namespace MatrixSolver.DataTypes.Automata
             Func<(int, int), bool, int> AddState = ((int firstState, int secondState) stateTuple, bool isStartState) =>
             {
                 bool isGoalState = false;
-                if(this.GoalStates.Contains(stateTuple.firstState) && automaton.GoalStates.Contains(stateTuple.secondState))
+                if (this.GoalStates.Contains(stateTuple.firstState) && automaton.GoalStates.Contains(stateTuple.secondState))
                 {
                     isGoalState = true;
                 }
-                var stateId =  newAutomaton.AddState(isGoalState: isGoalState, isStartState: isStartState);
+                var stateId = newAutomaton.AddState(isGoalState: isGoalState, isStartState: isStartState);
                 stateLookup[stateTuple] = stateId;
                 stateQueue.Enqueue(stateTuple);
                 return stateId;
             };
-            
+
             AddState(stateStart, true);
-            while(stateQueue.TryDequeue(out var stateTuple))
+            while (stateQueue.TryDequeue(out var stateTuple))
             {
                 var fromStateId = stateLookup[stateTuple];
-                foreach(var symbol in _alphabet)
+                foreach (var symbol in _alphabet)
                 {
                     var reachableStates1 = this.TransitionMatrix.GetStates(stateTuple.firstState, symbol);
-                    if(reachableStates1.Count == 0)
+                    if (reachableStates1.Count == 0)
                     {
                         continue;
                     }
                     var reachableStates2 = automaton.TransitionMatrix.GetStates(stateTuple.secondState, symbol);
-                    if(reachableStates2.Count == 0)
+                    if (reachableStates2.Count == 0)
                     {
                         continue;
                     }
                     // DFA, so must only be one more state.
                     var newStateTuple = (reachableStates1.First(), reachableStates2.First());
-                    if(!stateLookup.TryGetValue(newStateTuple, out var stateId))
+                    if (!stateLookup.TryGetValue(newStateTuple, out var stateId))
                     {
                         stateId = AddState(newStateTuple, false);
                     }
                     newAutomaton.AddTransition(fromStateId, stateId, symbol);
+                }
+            }
+            return newAutomaton;
+        }
+
+        /// <summary>
+        /// Returns a new automaton which is a minimzed version
+        /// The input must be a DFA
+        /// TODO: write unit tests
+        /// TODO: Remove after replaced
+        /// </summary>
+        public Automaton MinimizeDFA()
+        {
+            var equivalenceTree = new EquivalenceTree(this);
+            equivalenceTree.SeperateEquivalencesIntoBranches();
+            var newAutomaton = new Automaton(_alphabet);
+            var newAutomatonStateLookup = new Dictionary<LinkedList<int>, int>();
+            // First create all states
+            EquivalenceBranch? emptyEquivalenceBranch = null;
+            foreach (var equivalenceBranch in equivalenceTree.Equivalences)
+            {
+                if(equivalenceBranch.States.First!.Value == -1)
+                {
+                    emptyEquivalenceBranch = equivalenceBranch;
+                    continue;
+                }
+                var equivalence = equivalenceBranch.States;
+                bool isStartState = equivalence.Contains(_startStates.First());
+                // Each equivalence is either only made out of goal states or not, so check this way
+                bool isFinalState = _goalStates.Contains(equivalence.First());
+                newAutomatonStateLookup[equivalence] = newAutomaton.AddState(isStartState: isStartState, isGoalState: isFinalState);
+            }
+            // Then add all transitions
+            foreach (var equivalenceBranch in equivalenceTree.Equivalences)
+            {
+                if(equivalenceBranch == emptyEquivalenceBranch)
+                {
+                    continue;
+                }
+
+                var equivalence = equivalenceBranch.States;
+                var state = equivalence.First();
+                var newAutomatonStateFrom = newAutomatonStateLookup[equivalence];
+                foreach (var symbol in _alphabet)
+                {
+                    var states = TransitionMatrix.GetStates(state, symbol);
+                    if (states.Count != 0)
+                    {
+                        var stateTo = states.First();
+                        var stateToEquivalence = equivalenceTree.EquivalenceLookup[stateTo].States;
+                        if(stateToEquivalence.First!.Value == -1)
+                        {
+                            continue;
+                        }
+                        var newAutomatonStateTo = newAutomatonStateLookup[stateToEquivalence];
+                        newAutomaton.AddTransition(newAutomatonStateFrom, newAutomatonStateTo, symbol);
+                    }
                 }
             }
             return newAutomaton;

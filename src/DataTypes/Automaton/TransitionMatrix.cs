@@ -13,6 +13,9 @@ namespace MatrixSolver.DataTypes.Automata
             _transitionMatrix = new Dictionary<int, Dictionary<T, SortedSet<int>>>();
         }
 
+        /// <summary>
+        /// Adds a transition between two states for a given <paramref name="symbol" />
+        /// </summary>
         public bool AddTransition(int fromState, int toState, T symbol)
         {
             if (!_transitionMatrix.TryGetValue(fromState, out var transitionDict))
@@ -29,6 +32,9 @@ namespace MatrixSolver.DataTypes.Automata
             return stateList.Add(toState);
         }
 
+        /// <summary>
+        /// Removes a given state, and any outgoing and incoming transitions to it.
+        /// </summary>
         public void RemoveState(int state, bool skipIncomingTransitions = false)
         {
             _transitionMatrix.Remove(state);
@@ -45,6 +51,9 @@ namespace MatrixSolver.DataTypes.Automata
             }
         }
 
+        /// <summary>
+        /// Removes a transition between two states for a given <paramref name="symbol" />
+        /// </summary>
         public bool RemoveTransition(int fromState, int toState, T symbol)
         {
             if (!_transitionMatrix.TryGetValue(fromState, out var transitionDict))

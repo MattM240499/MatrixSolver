@@ -379,64 +379,9 @@ namespace MatrixSolver.DataTypes.Automata
         public ReachabilityStatus()
         { }
 
-        public void Switch()
-        {
-            var temp = EvenReachable;
-            EvenReachable = OddReachable;
-            OddReachable = temp;
-        }
-
         public static ReachabilityStatus Even()
         {
             return new ReachabilityStatus() { EvenReachable = true };
-        }
-    }
-
-    public class StateAccessibilityLookup
-    {
-        private readonly Dictionary<int, HashSet<int>> _stateNeighbourLookup;
-
-        public StateAccessibilityLookup()
-        {
-            _stateNeighbourLookup = new Dictionary<int, HashSet<int>>();
-        }
-
-        public bool AddNeigbour(int fromState, int toState)
-        {
-            if (!_stateNeighbourLookup.TryGetValue(fromState, out var states))
-            {
-                states = new HashSet<int>();
-                _stateNeighbourLookup[fromState] = states;
-            }
-
-            return states.Add(toState);
-        }
-
-        public bool TryGetNeighbours(int fromState, out IReadOnlyCollection<int>? set)
-        {
-            var isValid = _stateNeighbourLookup.TryGetValue(fromState, out var set2);
-            set = set2;
-            return isValid;
-        }
-
-        public IReadOnlyCollection<int> StatesAccessibleFrom(int fromState)
-        {
-            HashSet<int> accessibleStates = new HashSet<int>();
-            var stateQueue = new Queue<int>();
-            stateQueue.Enqueue(fromState);
-            accessibleStates.Add(fromState);
-            while (stateQueue.TryDequeue(out var newState))
-            {
-                var accesibleStates = _stateNeighbourLookup[newState];
-                foreach (var state in accesibleStates)
-                {
-                    if (accessibleStates.Add(newState))
-                    {
-                        stateQueue.Enqueue(newState);
-                    }
-                }
-            }
-            return accessibleStates;
         }
     }
 }

@@ -4,6 +4,7 @@ using System;
 using System.Linq;
 using MatrixSolver.DataTypes;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace MatrixSolver.Tests.DataTypes.Automata
 {
@@ -67,14 +68,14 @@ namespace MatrixSolver.Tests.DataTypes.Automata
         [Fact]
         public void AddTransition_AddsTransition_IfStatesInList()
         {
-            var stateIds = new[] { 0, 1, 2 };
-            var automaton = CreateEmptyAutomatonWithStates(stateIds);
+            var states = 3;
+            var automaton = CreateEmptyAutomatonWithStates(3);
 
-            foreach (var stateIdFrom in stateIds)
+            for (int i = 0; i < states; i++)
             {
-                foreach (var stateIdTo in stateIds)
+                for (int j = 0; j < states; j++)
                 {
-                    automaton.AddTransition(stateIdFrom, stateIdTo, 'a');
+                    automaton.AddTransition(i, j, 'a');
                 }
             }
         }
@@ -82,7 +83,7 @@ namespace MatrixSolver.Tests.DataTypes.Automata
         [Fact]
         public void AddTransition_Throws_IfFromStateNotInList()
         {
-            var automaton = CreateEmptyAutomatonWithStates(new[] { 0, 1, 2});
+            var automaton = CreateEmptyAutomatonWithStates(3);
 
             Assert.Throws<InvalidOperationException>(() => automaton.AddTransition(3, 1, _validSymbol));
         }
@@ -90,7 +91,7 @@ namespace MatrixSolver.Tests.DataTypes.Automata
         [Fact]
         public void AddTransition_Throws_IfToStateNotInList()
         {
-            var automaton = CreateEmptyAutomatonWithStates(new[] { 0, 1, 2 });
+            var automaton = CreateEmptyAutomatonWithStates(3);
 
             Assert.Throws<InvalidOperationException>(() => automaton.AddTransition(1, 3, _validSymbol));
         }
@@ -98,7 +99,7 @@ namespace MatrixSolver.Tests.DataTypes.Automata
         [Fact]
         public void AddTransition_Throws_IfSymbolNotInList()
         {
-            var automaton = CreateEmptyAutomatonWithStates(new[] { 1, 2, 3 });
+            var automaton = CreateEmptyAutomatonWithStates(3);
 
             Assert.Throws<InvalidOperationException>(() => automaton.AddTransition(1, 2, _invalidSymbol));
         }
@@ -166,11 +167,171 @@ namespace MatrixSolver.Tests.DataTypes.Automata
             Assert.True(dfa.IsValidWord("aababbaababababaaababbbababab"));
         }
 
-        private Automaton CreateEmptyAutomatonWithStates(int[] stateIds)
+        [Fact]
+        public void Minimize_MinimizesCorrectly()
+        {
+            // https://www.youtube.com/watch?v=0XaGAkY09Wc&t=2s
+            var automaton = CreateEmptyAutomatonWithStates(5);
+            automaton.SetAsStartState(0);
+            automaton.SetAsGoalState(4);
+            automaton.AddTransition(0, 1, 'a');
+            automaton.AddTransition(0, 2, 'b');
+            automaton.AddTransition(1, 1, 'a');
+            automaton.AddTransition(1, 3, 'b');
+            automaton.AddTransition(2, 1, 'a');
+            automaton.AddTransition(2, 2, 'b');
+            automaton.AddTransition(3, 1, 'a');
+            automaton.AddTransition(3, 4, 'b');
+            automaton.AddTransition(4, 1, 'a');
+            automaton.AddTransition(4, 2, 'b');
+            var minimizedAutomaton = automaton.MinimizeDFA();
+            
+            Assert.Equal(4, minimizedAutomaton.States.Count);
+        }
+
+        [Fact]
+        public void Minmize_MinimizesCorrectly2()
+        {
+            var automaton = CreateEmptyAutomatonWithStates(4);
+            automaton.SetAsStartState(0);
+            automaton.SetAsGoalState(3);
+            automaton.AddTransition(0, 1, 'a');
+            automaton.AddTransition(0, 3, 'b');
+            automaton.AddTransition(1, 2, 'a');
+            automaton.AddTransition(1, 3, 'b');
+            automaton.AddTransition(2, 2, 'a');
+            automaton.AddTransition(2, 3, 'b');
+            automaton.AddTransition(3, 3, 'a');
+            automaton.AddTransition(3, 2, 'b');
+            var minimizedAutomaton = automaton.MinimizeDFA();
+
+            Assert.Equal(2, minimizedAutomaton.States.Count);
+            Assert.True(minimizedAutomaton.IsValidWord("aaaaaabaaabbaaa"));
+            Assert.True(minimizedAutomaton.IsValidWord("b"));
+        }
+
+        [Fact]
+        public void Minmize_MinimizesCorrectly3()
+        {
+            var automaton = CreateEmptyAutomatonWithStates(4);
+            automaton.SetAsStartState(0);
+            automaton.SetAsGoalState(3);
+            automaton.AddTransition(0, 1, 'a');
+            automaton.AddTransition(0, 1, 'b');
+            automaton.AddTransition(1, 2, 'a');
+            automaton.AddTransition(1, 3, 'b');
+            automaton.AddTransition(2, 2, 'a');
+            automaton.AddTransition(2, 3, 'b');
+            automaton.AddTransition(3, 3, 'a');
+            automaton.AddTransition(3, 2, 'b');
+            var minimizedAutomaton = automaton.MinimizeDFA();
+
+            Assert.Equal(3, minimizedAutomaton.States.Count);
+            Assert.True(minimizedAutomaton.IsValidWord("ab"));
+            Assert.True(minimizedAutomaton.IsValidWord("abaaaaaaaaaaabaabbaaab"));
+        }
+
+        [Fact]
+        public void Minimize_MinimizesCorrectly4()
+        {
+            // https://www.youtube.com/watch?v=ex9sPLq5CRg
+            var automaton = CreateEmptyAutomatonWithStates(8);
+            automaton.SetAsStartState(0);
+            automaton.SetAsGoalState(2);
+            automaton.AddTransition(0, 1, 'a');
+            automaton.AddTransition(0, 5, 'b');
+            automaton.AddTransition(1, 6, 'a');
+            automaton.AddTransition(1, 2, 'b');
+            automaton.AddTransition(2, 0, 'a');
+            automaton.AddTransition(2, 2, 'b');
+            automaton.AddTransition(3, 2, 'a');
+            automaton.AddTransition(3, 6, 'b');
+            automaton.AddTransition(4, 7, 'a');
+            automaton.AddTransition(4, 5, 'b');
+            automaton.AddTransition(5, 2, 'a');
+            automaton.AddTransition(5, 6, 'b');
+            automaton.AddTransition(6, 6, 'a');
+            automaton.AddTransition(6, 4, 'b');
+            automaton.AddTransition(7, 6, 'a');
+            automaton.AddTransition(7, 2, 'b');
+
+            var minimizedAutomaton = automaton.MinimizeDFA();
+
+            Assert.Equal(5, minimizedAutomaton.States.Count);
+            Assert.True(minimizedAutomaton.IsValidWord("ab"));
+            Assert.True(minimizedAutomaton.IsValidWord("aababbbb"));
+        }
+
+        [Fact]
+        public void Minimize_MinimizesCorrectly5_MultipleGoalStates()
+        {
+            // https://www.youtube.com/watch?v=DV8cZp-2VmM
+            var automaton = CreateEmptyAutomatonWithStates(6);
+            automaton.SetAsStartState(0);
+            automaton.SetAsGoalState(2);
+            automaton.SetAsGoalState(3);
+            automaton.SetAsGoalState(4);
+            automaton.AddTransition(0, 1, 'a');
+            automaton.AddTransition(0, 2, 'b');
+            automaton.AddTransition(1, 0, 'a');
+            automaton.AddTransition(1, 3, 'b');
+            automaton.AddTransition(2, 4, 'a');
+            automaton.AddTransition(2, 5, 'b');
+            automaton.AddTransition(3, 4, 'a');
+            automaton.AddTransition(3, 5, 'b');
+            automaton.AddTransition(4, 4, 'a');
+            automaton.AddTransition(4, 5, 'b');
+            automaton.AddTransition(5, 5, 'a');
+            automaton.AddTransition(5, 5, 'b');
+
+            var minimizedAutomaton = automaton.MinimizeDFA();
+            Assert.Equal(2, minimizedAutomaton.States.Count);
+            Assert.True(minimizedAutomaton.IsValidWord("b"));
+            Assert.True(minimizedAutomaton.IsValidWord("ba"));
+            Assert.True(minimizedAutomaton.IsValidWord("ab"));
+            Assert.True(minimizedAutomaton.IsValidWord("aba"));
+        }
+
+        [Fact]
+        public void Minimize_MinimizesCorrectly6_IncompleteAutomata()
+        {
+            // https://www.youtube.com/watch?v=DV8cZp-2VmM
+            var automaton = CreateEmptyAutomatonWithStates(4);
+            automaton.SetAsStartState(0);
+            automaton.SetAsGoalState(2);
+            automaton.AddTransition(0, 1, 'a');
+            automaton.AddTransition(1, 2, 'a');
+            automaton.AddTransition(1, 3, 'b');
+
+            var minimizedAutomaton = automaton.MinimizeDFA();
+            Assert.Equal(3, minimizedAutomaton.States.Count);
+            Assert.True(minimizedAutomaton.IsValidWord("aa"));
+        }
+
+        [Fact]
+        public void Minimize_MinimizesCorrectly6_IncompleteAutomata2()
+        {
+            // https://www.youtube.com/watch?v=DV8cZp-2VmM
+            var automaton = CreateEmptyAutomatonWithStates(4);
+            automaton.SetAsStartState(0);
+            automaton.SetAsGoalState(2);
+            automaton.AddTransition(0, 1, 'a');
+            automaton.AddTransition(0, 1, 'b');
+            automaton.AddTransition(1, 2, 'a');
+            automaton.AddTransition(2, 2, 'a');
+
+            var minimizedAutomaton = automaton.MinimizeDFA();
+            Assert.Equal(3, minimizedAutomaton.States.Count);
+            Assert.True(minimizedAutomaton.IsValidWord("aa"));
+            Assert.True(minimizedAutomaton.IsValidWord("ba"));
+            Assert.True(minimizedAutomaton.IsValidWord("aaaaaaa"));
+        }
+
+        private Automaton CreateEmptyAutomatonWithStates(int states)
         {
             var automaton = new Automaton(_alphabet);
 
-            foreach (var id in stateIds)
+            for (int i = 0; i < states; i++)
             {
                 automaton.AddState();
             }
@@ -179,7 +340,7 @@ namespace MatrixSolver.Tests.DataTypes.Automata
 
         private Automaton CreateDFA1()
         {
-            var automaton = CreateEmptyAutomatonWithStates(new[] { 0, 1, 2, 3 });
+            var automaton = CreateEmptyAutomatonWithStates(4);
             automaton.SetAsStartState(0);
             automaton.SetAsGoalState(3);
             // TODO: Add report section for these tests
@@ -192,7 +353,7 @@ namespace MatrixSolver.Tests.DataTypes.Automata
 
         private Automaton CreateNFA1()
         {
-            var automaton = CreateEmptyAutomatonWithStates(new[] { 0, 1, 2, 3 });
+            var automaton = CreateEmptyAutomatonWithStates(4);
             automaton.SetAsStartState(0);
             automaton.SetAsGoalState(3);
             // TODO: Add report section for these tests
@@ -209,7 +370,7 @@ namespace MatrixSolver.Tests.DataTypes.Automata
         /// </summary>
         private Automaton CreateNFA2()
         {
-            var automaton = CreateEmptyAutomatonWithStates(new[] { 0, 1, 2, 3, 4, 5, 6, 7 });
+            var automaton = CreateEmptyAutomatonWithStates(8);
             // TODO: Add report section for these tests
             // Union
             automaton.AddTransition(0, 2, Automaton.Epsilon);

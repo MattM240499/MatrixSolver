@@ -22,7 +22,7 @@ namespace MatrixSolver
             var matrices = data.Matrices.Select(m => new ImmutableMatrix2x2(As2DArray(m, 2, 2))).ToArray();
             // Solve equation
             var sw = Stopwatch.StartNew();
-            MatrixEquationSolutionFinder.TrySolveVectorReachabilityProblem(matrices, vectorX, vectorY);
+            var automaton = MatrixEquationSolutionFinder.TrySolveVectorReachabilityProblem(matrices, vectorX, vectorY);
             sw.Stop();
             Console.WriteLine($"Program completed in {sw.ElapsedMilliseconds}ms");
         }

@@ -156,17 +156,20 @@ namespace MatrixSolver.Maths
 
         public static List<GeneratorMatrixIdentifier> ReplaceTAndInverseWithStandardGenerators(this List<GeneratorMatrixIdentifier> matrixProduct)
         {
-            for (int i = matrixProduct.Count - 1; i >= 0; i--)
+            var standardGeneratorList = new List<GeneratorMatrixIdentifier>(matrixProduct.Count);
+            for (int i = 0; i < matrixProduct.Count; i++)
             {
                 var element = matrixProduct[i];
                 if (element == GeneratorMatrixIdentifier.T || element == GeneratorMatrixIdentifier.TInverse || element == GeneratorMatrixIdentifier.SInverse)
                 {
-                    matrixProduct.RemoveAt(i);
-                    // Insert the replacement version with S/R/X
-                    matrixProduct.InsertRange(i, Constants.Matrices.GeneratorMatrixIdentifierLookup[element]);
+                    standardGeneratorList.AddRange(Constants.Matrices.GeneratorMatrixIdentifierLookup[element]);
+                }
+                else
+                {
+                    standardGeneratorList.Add(element);
                 }
             }
-            return matrixProduct;
+            return standardGeneratorList;
         }
 
         public static List<GeneratorMatrixIdentifier> SimplifyToCanonicalForm(this List<GeneratorMatrixIdentifier> matrixProduct)
@@ -187,6 +190,9 @@ namespace MatrixSolver.Maths
             // Now simplify by removing instance of S^2 and T^3. This leverages the fact that S^2 = T^3 = X = -I
             var consecutiveCharacter = GeneratorMatrixIdentifier.X;
             bool changes = true;
+            // TODO: Potential optimisation: Can we remove the need for insert/remove actions
+            // - LinkedList?
+            // - Create a new list. (Will need to track multiple indexes (think of simplifying: RSRRRSRR = epsilon))
             while (changes)
             {
                 int consecutiveCharacterCount = 0;

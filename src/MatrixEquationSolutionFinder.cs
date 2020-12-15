@@ -14,7 +14,7 @@ namespace MatrixSolver
         /// Finds a solution if it exists to the vector reachability problem.
         /// I.e. given a list of matrices 
         /// </summary>
-        public static void TrySolveVectorReachabilityProblem(ImmutableMatrix2x2[] matrices, ImmutableVector2D vectorX, ImmutableVector2D vectorY)
+        public static Automaton TrySolveVectorReachabilityProblem(ImmutableMatrix2x2[] matrices, ImmutableVector2D vectorX, ImmutableVector2D vectorY)
         {
             // Validate input data
             // TODO: Reorganise into subroutines to allow for unit testing.
@@ -109,7 +109,14 @@ namespace MatrixSolver
             var canonicalDfa2 = dfa2.ToDFA();
 
             var intersectedDFA = canonicalDfa1.IntersectionWithDFA(canonicalDfa2);
+            var minimizedDfa = intersectedDFA.MinimizeDFA();
 
+            // TODO: Remove test code.
+            bool containsDFA1 = canonicalDfa1.IsValidWord("XSRSRSRS");
+            bool containsDFA2 = canonicalDfa2.IsValidWord("XSRSRSRS");
+            bool containsA = minimizedDfa.IsValidWord("XSRSRSRS");
+            Console.WriteLine($"DFA1: {containsDFA1}\nDFA2: {containsDFA2}\nIntersected: {containsA}");
+            return minimizedDfa;
         }
 
         private static ImmutableMatrix2x2 CalculateMatrixA(ImmutableVector2D vector)
