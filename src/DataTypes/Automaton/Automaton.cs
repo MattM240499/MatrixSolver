@@ -20,7 +20,8 @@ namespace MatrixSolver.DataTypes.Automata
         private readonly HashSet<int> _states;
         /// <summary>An adjacency matrix of transition states</summary>
         private readonly TransitionMatrix<char> _transitionMatrix;
-        private readonly HashSet<char> _alphabet;
+        private readonly SortedSet<char> _alphabet;
+        private int _statesIdCounter;
         /// <summary>
         /// The Transition Matrix representing all possible paths between states
         /// </summary>
@@ -28,6 +29,7 @@ namespace MatrixSolver.DataTypes.Automata
         public IReadOnlyCollection<int> States => _states;
         public IReadOnlyCollection<int> StartStates => _startStates;
         public IReadOnlyCollection<int> GoalStates => _goalStates;
+        public IReadOnlyCollection<char> Alphabet => _alphabet;
         public const char Epsilon = 'Ɛ';
 
         public Automaton(IReadOnlyCollection<char> alphabet)
@@ -36,33 +38,35 @@ namespace MatrixSolver.DataTypes.Automata
             _startStates = new HashSet<int>();
             _goalStates = new HashSet<int>();
             _transitionMatrix = new TransitionMatrix<char>();
-            _alphabet = new HashSet<char>(alphabet);
+            _alphabet = new SortedSet<char>(alphabet);
         }
 
         /// <summary>
         /// Adds an empty state to the automaton. Throws if state Id already in use
         /// </summary>
-        public void AddState(int currentStateId, bool isGoalState = false, bool isStartState = false)
+        public int AddState(bool isGoalState = false, bool isStartState = false)
         {
-            if (!_states.Add(currentStateId))
+            var stateId = _statesIdCounter++;
+            if (!_states.Add(stateId))
             {
-                throw new InvalidOperationException($"State with Id={currentStateId} already exists");
+                throw new InvalidOperationException($"State with Id={stateId} already exists");
             }
 
             if (isGoalState)
             {
-                _goalStates.Add(currentStateId);
+                _goalStates.Add(stateId);
             }
             if (isStartState)
             {
-                _startStates.Add(currentStateId);
+                _startStates.Add(stateId);
             }
+            return stateId;
         }
 
         /// <summary>
         /// Adds a one way transition between two existing states. Throws if the states do not exist, or a transition already exists for that state
         /// </summary>
-        public void AddTransition(int fromcurrentStateId, int tocurrentStateId, char symbol)
+        public bool AddTransition(int fromcurrentStateId, int tocurrentStateId, char symbol)
         {
             if (!_alphabet.Contains(symbol) && symbol != Epsilon)
             {
@@ -78,7 +82,25 @@ namespace MatrixSolver.DataTypes.Automata
             }
 
             // Perform update
-            _transitionMatrix.Add(fromcurrentStateId, tocurrentStateId, symbol);
+            return _transitionMatrix.AddTransition(fromcurrentStateId, tocurrentStateId, symbol);
+        }
+
+        /// <summary>
+        /// Deletes a state and all transitions associated with it. Can specify to skip removing incoming transitions.
+        /// This should only be used when it is known that there are no incoming transitions. If used incorrectly,
+        /// this can result in an incorrect final automata.
+        /// </summary>
+        public void DeleteState(int state, bool skipIncomingTransitions = false)
+        {
+            _states.Remove(state);
+            _startStates.Remove(state);
+            _goalStates.Remove(state);
+            _transitionMatrix.RemoveState(state, skipIncomingTransitions);
+        }
+
+        public bool DeleteTransition(int fromState, int toState, char symbol)
+        {
+            return _transitionMatrix.RemoveTransition(fromState, toState, symbol);
         }
 
         public bool SetAsStartState(int currentStateId)
@@ -149,14 +171,38 @@ namespace MatrixSolver.DataTypes.Automata
                 }
                 currentStates = nextStates;
             }
-            foreach(var state in currentStates)
+            foreach (var state in currentStates)
             {
-                if(_goalStates.Contains(state))
+                if (_goalStates.Contains(state))
                 {
                     return true;
                 }
             }
             return false;
+        }
+
+        public IReadOnlyCollection<int> GetStatesReachableFromStateWithSymbol(int state, char symbol, bool useEpsilonStatesFromInitial = true)
+        {
+            var states = new HashSet<int>() { state };
+            // Find all epsilon states from the original state.
+            if (useEpsilonStatesFromInitial)
+            {
+                AddEpsilonStates(states, states);
+            }
+
+            var symbolStates = new HashSet<int>();
+            // Then add R transitions
+            foreach (var symbolState in states)
+            {
+                var reachableStates = TransitionMatrix.GetStates(state, symbol);
+                foreach (var reachableState in reachableStates)
+                {
+                    symbolStates.Add(reachableState);
+                }
+            }
+            // Finally add the epsilon states again.
+            AddEpsilonStates(symbolStates, symbolStates);
+            return symbolStates;
         }
 
         /// <summary>
@@ -166,28 +212,15 @@ namespace MatrixSolver.DataTypes.Automata
         {
             // A list of states. Each list will become a new state
             var automaton = new Automaton(_alphabet);
-            int states = 0;
             var newAutomatonStates = new Dictionary<SortedSet<int>, int>(_currentStateListComparer);
             var stateStack = new Stack<SortedSet<int>>();
 
             // Setup subprocedure
-            Func<SortedSet<int>, int> AddNewState = (SortedSet<int> set) =>
+            Func<SortedSet<int>, bool, int> AddNewState = (SortedSet<int> set, bool isStartState) =>
             {
-                var currentStateId = states++;
-                stateStack.Push(set);
-                newAutomatonStates.Add(set, currentStateId);
-                bool isStartState = false;
                 bool isGoalState = false;
                 foreach (var currentState in set)
                 {
-                    if (this._startStates.Contains(currentState))
-                    {
-                        isStartState = true;
-                        if (isGoalState)
-                        {
-                            break;
-                        }
-                    }
                     if (this._goalStates.Contains(currentState))
                     {
                         isGoalState = true;
@@ -197,14 +230,16 @@ namespace MatrixSolver.DataTypes.Automata
                         }
                     }
                 }
-                automaton.AddState(currentStateId, isStartState: isStartState, isGoalState: isGoalState);
+                var currentStateId = automaton.AddState(isStartState: isStartState, isGoalState: isGoalState);
+                stateStack.Push(set);
+                newAutomatonStates.Add(set, currentStateId);
                 return currentStateId;
             };
 
             // Begin DFA calculation
             var set = new SortedSet<int>(_startStates);
             AddEpsilonStates(set, set);
-            AddNewState(set);
+            AddNewState(set, true);
             while (stateStack.TryPop(out var currentStateList))
             {
                 var currentStateId = newAutomatonStates[currentStateList];
@@ -220,20 +255,141 @@ namespace MatrixSolver.DataTypes.Automata
                         }
                     }
                     AddEpsilonStates(reachableStates, reachableStates);
-                    if(reachableStates.Count == 0)
-                    {
-                        continue;
-                    }
                     // We have all reachable states with the given symbol. If a state in the new automata
                     // already exists for this combination, then we don't need to add a new state.
+                    if (reachableStates.Count == 0)
+                    {
+                        // Ignore the empty state
+                        continue;
+                    }
                     if (!newAutomatonStates.TryGetValue(reachableStates, out var toStateId))
                     {
-                        toStateId = AddNewState(reachableStates);
+                        toStateId = AddNewState(reachableStates, false);
                     }
                     automaton.AddTransition(currentStateId, toStateId, symbol);
                 }
             }
             return automaton;
+        }
+
+        /// <summary>
+        /// Returns a new automaton which is the result of intersection with another DFA.
+        /// Both Automaton must be DFA.
+        /// TODO: Add unit tests
+        /// </summary>
+        public Automaton IntersectionWithDFA(Automaton automaton)
+        {
+            // Check they have the same alphabet.
+            foreach (var symbol in automaton.Alphabet)
+            {
+                if (!_alphabet.Contains(symbol))
+                {
+                    throw new InvalidOperationException("Could not calculate the intersection as the alphabets were distinct");
+                }
+            }
+
+            var newAutomaton = new Automaton(_alphabet);
+
+            var stateLookup = new Dictionary<(int, int), int>();
+            // Only one start state per dfa
+            var stateStart = (this.StartStates.First(), automaton.StartStates.First());
+            var stateQueue = new Queue<(int firstState, int secondState)>();
+            Func<(int, int), bool, int> AddState = ((int firstState, int secondState) stateTuple, bool isStartState) =>
+            {
+                bool isGoalState = false;
+                if (this.GoalStates.Contains(stateTuple.firstState) && automaton.GoalStates.Contains(stateTuple.secondState))
+                {
+                    isGoalState = true;
+                }
+                var stateId = newAutomaton.AddState(isGoalState: isGoalState, isStartState: isStartState);
+                stateLookup[stateTuple] = stateId;
+                stateQueue.Enqueue(stateTuple);
+                return stateId;
+            };
+
+            AddState(stateStart, true);
+            while (stateQueue.TryDequeue(out var stateTuple))
+            {
+                var fromStateId = stateLookup[stateTuple];
+                foreach (var symbol in _alphabet)
+                {
+                    var reachableStates1 = this.TransitionMatrix.GetStates(stateTuple.firstState, symbol);
+                    if (reachableStates1.Count == 0)
+                    {
+                        continue;
+                    }
+                    var reachableStates2 = automaton.TransitionMatrix.GetStates(stateTuple.secondState, symbol);
+                    if (reachableStates2.Count == 0)
+                    {
+                        continue;
+                    }
+                    // DFA, so must only be one more state.
+                    var newStateTuple = (reachableStates1.First(), reachableStates2.First());
+                    if (!stateLookup.TryGetValue(newStateTuple, out var stateId))
+                    {
+                        stateId = AddState(newStateTuple, false);
+                    }
+                    newAutomaton.AddTransition(fromStateId, stateId, symbol);
+                }
+            }
+            return newAutomaton;
+        }
+
+        /// <summary>
+        /// Returns a new automaton which is a minimzed version
+        /// The input must be a DFA
+        /// TODO: write unit tests
+        /// TODO: Remove after replaced
+        /// </summary>
+        public Automaton MinimizeDFA()
+        {
+            var equivalenceTree = new EquivalenceTree(this);
+            equivalenceTree.SeperateEquivalencesIntoBranches();
+            var newAutomaton = new Automaton(_alphabet);
+            var newAutomatonStateLookup = new Dictionary<LinkedList<int>, int>();
+            // First create all states
+            EquivalenceBranch? emptyEquivalenceBranch = null;
+            foreach (var equivalenceBranch in equivalenceTree.Equivalences)
+            {
+                if(equivalenceBranch.States.First!.Value == -1)
+                {
+                    emptyEquivalenceBranch = equivalenceBranch;
+                    continue;
+                }
+                var equivalence = equivalenceBranch.States;
+                bool isStartState = equivalence.Contains(_startStates.First());
+                // Each equivalence is either only made out of goal states or not, so check this way
+                bool isFinalState = _goalStates.Contains(equivalence.First());
+                newAutomatonStateLookup[equivalence] = newAutomaton.AddState(isStartState: isStartState, isGoalState: isFinalState);
+            }
+            // Then add all transitions
+            foreach (var equivalenceBranch in equivalenceTree.Equivalences)
+            {
+                if(equivalenceBranch == emptyEquivalenceBranch)
+                {
+                    continue;
+                }
+
+                var equivalence = equivalenceBranch.States;
+                var state = equivalence.First();
+                var newAutomatonStateFrom = newAutomatonStateLookup[equivalence];
+                foreach (var symbol in _alphabet)
+                {
+                    var states = TransitionMatrix.GetStates(state, symbol);
+                    if (states.Count != 0)
+                    {
+                        var stateTo = states.First();
+                        var stateToEquivalence = equivalenceTree.EquivalenceLookup[stateTo].States;
+                        if(stateToEquivalence.First!.Value == -1)
+                        {
+                            continue;
+                        }
+                        var newAutomatonStateTo = newAutomatonStateLookup[stateToEquivalence];
+                        newAutomaton.AddTransition(newAutomatonStateFrom, newAutomatonStateTo, symbol);
+                    }
+                }
+            }
+            return newAutomaton;
         }
 
         /// <summary>
@@ -262,11 +418,11 @@ namespace MatrixSolver.DataTypes.Automata
     {
         public bool Equals(SortedSet<int>? left, SortedSet<int>? right)
         {
-            if(left is null)
+            if (left is null)
             {
                 return right is null;
             }
-            if(right is null)
+            if (right is null)
             {
                 return false;
             }
@@ -284,7 +440,7 @@ namespace MatrixSolver.DataTypes.Automata
         public int GetHashCode(SortedSet<int> set)
         {
             var result = 0;
-            foreach(var element in set)
+            foreach (var element in set)
             {
                 unchecked
                 {

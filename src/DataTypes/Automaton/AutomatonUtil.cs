@@ -30,10 +30,10 @@ namespace MatrixSolver.DataTypes.Automata
         public static Automaton RegexToAutomaton(string regex, char[] alphabet)
         {
             // Initialise variables
-            int statesCount = 0;
             int startState = 0;
             int goalState = 0;
             var symbols = new HashSet<char>(alphabet);
+            symbols.Add(Automaton.Epsilon);
             Stack<int> preBracketStates = new Stack<int>();
             // Create automaton
             var automaton = new Automaton(alphabet);
@@ -42,16 +42,14 @@ namespace MatrixSolver.DataTypes.Automata
             // Convert to postfix
             var postFixRegex = RegexToPostfix(regex);
             Stack<(int startState, int goalState)> NFAPartitions = new Stack<(int, int)>();
-            while(postFixRegex.TryDequeue(out char character))
+            while (postFixRegex.TryDequeue(out char character))
             {
                 switch (character)
                 {
                     case KleeneStarOperator:
                         var partition = NFAPartitions.Pop();
-                        startState = statesCount++;
-                        goalState = statesCount++;
-                        automaton.AddState(startState);
-                        automaton.AddState(goalState);
+                        startState = automaton.AddState();
+                        goalState = automaton.AddState();
                         automaton.AddTransition(startState, partition.startState, Automaton.Epsilon);
                         automaton.AddTransition(startState, goalState, Automaton.Epsilon);
                         automaton.AddTransition(partition.goalState, partition.startState, Automaton.Epsilon);
@@ -61,18 +59,27 @@ namespace MatrixSolver.DataTypes.Automata
                     case ConcatenationOperator:
                         var rightPartition = NFAPartitions.Pop();
                         var leftPartition = NFAPartitions.Pop();
-                        // TODO: Remove epsilon transition and merge the states instead
-                        automaton.AddTransition(leftPartition.goalState, rightPartition.startState, Automaton.Epsilon);
-                        //automaton.MergeStates(firstPartition.goalState, secondPartition.startState);
+                        // Because each partition will always have 0 incoming transitions from their start states,
+                        // to merge the states, it is simply a case of copying the transitions from the right partition's
+                        // start state to the final state of the left partition, and then finally remove the first state.
+                        int copyState = rightPartition.startState;
+                        int copiedToState = leftPartition.goalState;
+                        foreach (var symbol in symbols)
+                        {
+                            var states = automaton.TransitionMatrix.GetStates(copyState, symbol);
+                            foreach (var state in states)
+                            {
+                                automaton.AddTransition(copiedToState, state, symbol);
+                            }
+                        }
+                        automaton.DeleteState(copyState, skipIncomingTransitions: true);
                         NFAPartitions.Push((leftPartition.startState, rightPartition.goalState));
                         break;
                     case UnionOperator:
                         var topPartition = NFAPartitions.Pop();
                         var bottomPartition = NFAPartitions.Pop();
-                        startState = statesCount++;
-                        goalState = statesCount++;
-                        automaton.AddState(startState);
-                        automaton.AddState(goalState);
+                        startState = automaton.AddState();
+                        goalState = automaton.AddState();
                         automaton.AddTransition(startState, topPartition.startState, Automaton.Epsilon);
                         automaton.AddTransition(startState, bottomPartition.startState, Automaton.Epsilon);
                         automaton.AddTransition(topPartition.goalState, goalState, Automaton.Epsilon);
@@ -85,10 +92,8 @@ namespace MatrixSolver.DataTypes.Automata
                         {
                             throw new ArgumentException($"Invalid regex. Character {character} not a member of the alphabet");
                         }
-                        startState = statesCount++;
-                        goalState = statesCount++;
-                        automaton.AddState(startState);
-                        automaton.AddState(goalState);
+                        startState = automaton.AddState();
+                        goalState = automaton.AddState();
                         automaton.AddTransition(startState, goalState, character);
                         NFAPartitions.Push((startState, goalState));
                         break;
@@ -138,7 +143,6 @@ namespace MatrixSolver.DataTypes.Automata
                 }
 
                 newRegex += character;
-
             }
             // Now apply the Shunting-Yard Algorithm
             // https://medium.com/@gregorycernera/converting-regular-expressions-to-postfix-notation-with-the-shunting-yard-algorithm-63d22ea1cf88
@@ -174,12 +178,210 @@ namespace MatrixSolver.DataTypes.Automata
                         break;
                 }
             }
-            while(operatorStack.TryPop(out nextOperator))
+            while (operatorStack.TryPop(out nextOperator))
             {
                 postfixQueue.Enqueue(nextOperator);
             }
 
             return postfixQueue;
+        }
+
+        /// <summary>
+        /// Updates a DFA to canonical form.
+        /// </summary>
+        public static Automaton UpdateDFAToCanonicalForm(this Automaton automaton)
+        {
+            return automaton
+                .PopulateDFAWithXAndEpsilonTransitions()
+                .InsertXStatesAroundRAndSTransitions();
+        }
+
+        internal static Automaton PopulateDFAWithXAndEpsilonTransitions(this Automaton automaton)
+        {
+            bool changes = true;
+            while (changes)
+            {
+                changes = false;
+                // First, Look for XX and add epsilon transition where possible
+                foreach (var state in automaton.States)
+                {
+                    var states = automaton.GetStatesReachableFromStateWithSymbol(state, Constants.RegularLanguage.X);
+
+                    foreach (var xReachableState in states)
+                    {
+                        var epsilonStates = automaton.GetStatesReachableFromStateWithSymbol(xReachableState, Constants.RegularLanguage.X, false);
+                        foreach (var epsilonState in epsilonStates)
+                        {
+                            if (state != epsilonState && automaton.AddTransition(state, epsilonState, Automaton.Epsilon))
+                            {
+                                changes = true;
+                            }
+                        }
+                    }
+                }
+                // Look for Identity statements (RRR/SS)
+                foreach (var startState in automaton.States)
+                {
+                    // Now look for S * X^alpha * S states
+                    var SSreachabilityDictionary = automaton.GetStatesReachableFromStateWithSymbol(startState, Constants.RegularLanguage.S)
+                        .ToDictionary((s) => s, (s) => ReachabilityStatus.Even())
+                        .ApplyMultipleXTransitionToReachabilityDictionary(automaton)
+                        .ApplyTransitionToReachabilityDictionary(automaton, Constants.RegularLanguage.S);
+                    foreach (var (finalState, reachability) in SSreachabilityDictionary)
+                    {
+                        if (AddTransitionsFromReachabilityStatus(automaton, startState, finalState, reachability))
+                        {
+                            changes = true;
+                        }
+                    }
+                    // Add R * X^alpha1 * R * X^alpha2 * R
+                    var RRRreachabilityDictionary = automaton.GetStatesReachableFromStateWithSymbol(startState, Constants.RegularLanguage.R)
+                        .ToDictionary((s) => s, (s) => ReachabilityStatus.Even())
+                        .ApplyMultipleXTransitionToReachabilityDictionary(automaton)
+                        .ApplyTransitionToReachabilityDictionary(automaton, Constants.RegularLanguage.R)
+                        .ApplyMultipleXTransitionToReachabilityDictionary(automaton)
+                        .ApplyTransitionToReachabilityDictionary(automaton, Constants.RegularLanguage.R);
+                    foreach (var (finalState, reachability) in RRRreachabilityDictionary)
+                    {
+                        if (AddTransitionsFromReachabilityStatus(automaton, startState, finalState, reachability))
+                        {
+                            changes = true;
+                        }
+                    }
+                }
+            }
+            return automaton;
+        }
+
+        /// <summary>
+        /// TODO: Write tests plz
+        /// </summary>
+        internal static Automaton InsertXStatesAroundRAndSTransitions(this Automaton automaton)
+        {
+            var states = new List<int>(automaton.States);
+            var symbols = new[] { Constants.RegularLanguage.R, Constants.RegularLanguage.S };
+            foreach (var fromState in states)
+            {
+                foreach (var symbol in symbols)
+                {
+                    var toStates = new List<int>(automaton.TransitionMatrix.GetStates(fromState, symbol));
+                    foreach (var toState in toStates)
+                    {
+                        // Delete the transition
+                        automaton.DeleteTransition(fromState, toState, Constants.RegularLanguage.R);
+                        // Add a new state before and after
+                        int beforeState = automaton.AddState();
+                        int afterState = automaton.AddState();
+                        // Now add the new transitions between the states
+                        automaton.AddTransition(fromState, beforeState, Constants.RegularLanguage.X);
+                        automaton.AddTransition(beforeState, afterState, symbol);
+                        automaton.AddTransition(afterState, toState, Constants.RegularLanguage.X);
+                    }
+                }
+            }
+            // Add epsilon transitions between all new X states
+            bool changes = true;
+            while (changes)
+            {
+                changes = false;
+                foreach (var state in automaton.States)
+                {
+                    var xStates = automaton.GetStatesReachableFromStateWithSymbol(state, Constants.RegularLanguage.X);
+                    foreach (var xState in xStates)
+                    {
+                        var epsilonStates = automaton.GetStatesReachableFromStateWithSymbol(state, Constants.RegularLanguage.X, false);
+                        foreach (var epsilonState in epsilonStates)
+                        {
+                            if (automaton.AddTransition(state, epsilonState, Automaton.Epsilon))
+                            {
+                                changes = true;
+                            }
+                        }
+                    }
+                }
+            }
+            return automaton;
+        }
+
+        private static IReadOnlyDictionary<int, ReachabilityStatus> ApplyMultipleXTransitionToReachabilityDictionary(
+            this IReadOnlyDictionary<int, ReachabilityStatus> currentReachabilityDictionary, Automaton automaton
+        )
+        {
+            var newReachabilityDictionary = new Dictionary<int, ReachabilityStatus>(currentReachabilityDictionary);
+            foreach (var (currentState, x1Reachability) in currentReachabilityDictionary)
+            {
+                var reachableStates = automaton.GetStatesReachableFromStateWithSymbol(currentState, Constants.RegularLanguage.X, false);
+                // Now combine all those states with the current reachability dictionary
+                foreach (var state in reachableStates)
+                {
+                    if (!newReachabilityDictionary.TryGetValue(state, out var stateReachability))
+                    {
+                        stateReachability = new ReachabilityStatus();
+                        newReachabilityDictionary[state] = stateReachability;
+                    }
+                    // This state has reachability of the opposite of the previous state
+                    stateReachability.OddReachable |= x1Reachability.EvenReachable;
+                    stateReachability.EvenReachable |= x1Reachability.OddReachable;
+                }
+            }
+            return newReachabilityDictionary;
+        }
+
+        private static IReadOnlyDictionary<int, ReachabilityStatus> ApplyTransitionToReachabilityDictionary(
+            this IReadOnlyDictionary<int, ReachabilityStatus> currentReachabilityDictionary, Automaton automaton,
+             char symbol)
+        {
+            var newReachabilityDictionary = new Dictionary<int, ReachabilityStatus>();
+            foreach (var (state, reachabilityStatus) in currentReachabilityDictionary)
+            {
+                var newStates = automaton.GetStatesReachableFromStateWithSymbol(state, symbol, false);
+                foreach (var newState in newStates)
+                {
+                    if (!newReachabilityDictionary.TryGetValue(newState, out var newStatereachabilityStatus))
+                    {
+                        newStatereachabilityStatus = new ReachabilityStatus();
+                        newReachabilityDictionary[newState] = newStatereachabilityStatus;
+                    }
+                    newStatereachabilityStatus.EvenReachable |= reachabilityStatus.EvenReachable;
+                    newStatereachabilityStatus.OddReachable |= reachabilityStatus.OddReachable;
+                }
+
+            }
+            return newReachabilityDictionary;
+        }
+
+        private static bool AddTransitionsFromReachabilityStatus(Automaton automaton, int startState, int finalState, ReachabilityStatus reachabilityStatus)
+        {
+            bool changes = false;
+            if (reachabilityStatus.EvenReachable)
+            {
+                if (automaton.AddTransition(startState, finalState, Constants.RegularLanguage.X))
+                {
+                    changes = true;
+                }
+            }
+            else if (reachabilityStatus.OddReachable)
+            {
+                // Odd reachable so add X transition
+                if (startState != finalState && automaton.AddTransition(startState, finalState, Automaton.Epsilon))
+                {
+                    changes = true;
+                }
+            }
+            return changes;
+        }
+    }
+
+    public class ReachabilityStatus
+    {
+        public bool EvenReachable { get; set; }
+        public bool OddReachable { get; set; }
+        public ReachabilityStatus()
+        { }
+
+        public static ReachabilityStatus Even()
+        {
+            return new ReachabilityStatus() { EvenReachable = true };
         }
     }
 }

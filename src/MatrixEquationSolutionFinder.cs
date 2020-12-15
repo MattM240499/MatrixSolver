@@ -14,7 +14,7 @@ namespace MatrixSolver
         /// Finds a solution if it exists to the vector reachability problem.
         /// I.e. given a list of matrices 
         /// </summary>
-        public static void TrySolveVectorReachabilityProblem(ImmutableMatrix2x2[] matrices, ImmutableVector2D vectorX, ImmutableVector2D vectorY)
+        public static Automaton TrySolveVectorReachabilityProblem(ImmutableMatrix2x2[] matrices, ImmutableVector2D vectorX, ImmutableVector2D vectorY)
         {
             // Validate input data
             // TODO: Reorganise into subroutines to allow for unit testing.
@@ -77,16 +77,14 @@ namespace MatrixSolver
             // TODO: Can we optimise this?
             string matrixSolutionForm = String.Join("",
                 AyAsGeneratorMatrices.Select(i => i.ToString())
-                    .Append("(")
+                    .Append("((")
                     .Concat(TAsGeneratorMatrices.Select(i => i.ToString()))
                     .Append(")*")
-                    .Concat(AxInverseAsGeneratorMatrices.Select(i => i.ToString()))
                     .Append("|")
-                    .Concat(AyAsGeneratorMatrices.Select(i => i.ToString()))
                     .Append("(")
                     .Concat(TInverseAsGeneratorMatrices.Select(i => i.ToString()))
-                    .Append(")*")
-                    .Concat(AyAsGeneratorMatrices.Select(i => i.ToString()))
+                    .Append(")*)")
+                    .Concat(AxInverseAsGeneratorMatrices.Select(i => i.ToString()))
             );
 
             string matrixProductForm = "(" +
@@ -103,6 +101,22 @@ namespace MatrixSolver
 
             var dfa1 = solutionMatrixAutomaton.ToDFA();
             var dfa2 = matrixProductAutomaton.ToDFA();
+
+            dfa1.UpdateDFAToCanonicalForm();
+            dfa2.UpdateDFAToCanonicalForm();
+
+            var canonicalDfa1 = dfa1.ToDFA();
+            var canonicalDfa2 = dfa2.ToDFA();
+
+            var intersectedDFA = canonicalDfa1.IntersectionWithDFA(canonicalDfa2);
+            var minimizedDfa = intersectedDFA.MinimizeDFA();
+
+            // TODO: Remove test code.
+            bool containsDFA1 = canonicalDfa1.IsValidWord("XSRSRSRS");
+            bool containsDFA2 = canonicalDfa2.IsValidWord("XSRSRSRS");
+            bool containsA = minimizedDfa.IsValidWord("XSRSRSRS");
+            Console.WriteLine($"DFA1: {containsDFA1}\nDFA2: {containsDFA2}\nIntersected: {containsA}");
+            return minimizedDfa;
         }
 
         private static ImmutableMatrix2x2 CalculateMatrixA(ImmutableVector2D vector)
