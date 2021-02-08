@@ -1,12 +1,12 @@
 using System;
 using System.Linq;
 using Extreme.Mathematics;
-using MatrixSolver.DataTypes;
-using MatrixSolver.DataTypes.Automata;
-using MatrixSolver.Maths;
-using MatrixSolver.Maths.Extensions;
+using MatrixSolver.Computations.DataTypes;
+using MatrixSolver.Computations.DataTypes.Automata;
+using MatrixSolver.Computations.Maths;
+using MatrixSolver.Computations.Maths.Extensions;
 
-namespace MatrixSolver
+namespace MatrixSolver.Computations
 {
     public static class MatrixEquationSolutionFinder
     {
@@ -14,7 +14,7 @@ namespace MatrixSolver
         /// Finds a solution if it exists to the vector reachability problem.
         /// I.e. given a list of matrices 
         /// </summary>
-        public static Automaton TrySolveVectorReachabilityProblem(ImmutableMatrix2x2[] matrices, ImmutableVector2D vectorX, ImmutableVector2D vectorY)
+        public static Automaton SolveVectorReachabilityProblem(ImmutableMatrix2x2[] matrices, ImmutableVector2D vectorX, ImmutableVector2D vectorY)
         {
             // Validate input data
             // TODO: Reorganise into subroutines to allow for unit testing.
@@ -88,10 +88,10 @@ namespace MatrixSolver
             );
 
             string matrixProductForm = "(" +
-                    string.Join("|", 
-                    matricesAsGeneratorMatrices.Select(i => 
+                    string.Join("|",
+                    matricesAsGeneratorMatrices.Select(i =>
                         String.Join("", i.Select(j => j.ToString())))
-                    )  +
+                    ) +
                     ")*";
             Console.WriteLine($"Solutions of Mx = y as a regex are of the form: {matrixSolutionForm}");
             Console.WriteLine($"Solution as a product of input matrices as a regex are of the form: {matrixProductForm}");
@@ -111,11 +111,6 @@ namespace MatrixSolver
             var intersectedDFA = canonicalDfa1.IntersectionWithDFA(canonicalDfa2);
             var minimizedDfa = intersectedDFA.MinimizeDFA();
 
-            // TODO: Remove test code.
-            bool containsDFA1 = canonicalDfa1.IsValidWord("XSRSRSRS");
-            bool containsDFA2 = canonicalDfa2.IsValidWord("XSRSRSRS");
-            bool containsA = minimizedDfa.IsValidWord("XSRSRSRS");
-            Console.WriteLine($"DFA1: {containsDFA1}\nDFA2: {containsDFA2}\nIntersected: {containsA}");
             return minimizedDfa;
         }
 
@@ -152,7 +147,7 @@ namespace MatrixSolver
             var yGcd = MathematicalHelper.GCD(vectorY.UnderlyingVector[0].Numerator, vectorY.UnderlyingVector[1].Numerator);
             if (xGcd != yGcd)
             {
-                throw new ArgumentException($"Vector X GCD had value {xGcd} which was different to Vector Y GCD of {yGcd}. ");
+                throw new ArgumentException($"Vector X GCD had value {xGcd} which was different to Vector Y GCD of {yGcd}. Therefore, there are no solutions in SL(2,Z)");
             }
 
             return new BigRational(1, xGcd);

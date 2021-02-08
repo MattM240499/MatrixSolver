@@ -2,7 +2,7 @@
 using System;
 using Extreme.Mathematics;
 
-namespace MatrixSolver
+namespace MatrixSolver.Computations
 {
     /// <summary>
     /// Used to deserialise from a file the input data
@@ -15,9 +15,9 @@ namespace MatrixSolver
 
         public void ThrowIfNull()
         {
-            if(Matrices is null) throw new ArgumentNullException(nameof(Matrices));
-            if(VectorX is null) throw new ArgumentNullException(nameof(Matrices));
-            if(VectorY is null) throw new ArgumentNullException(nameof(Matrices));
+            if (Matrices is null) throw new ArgumentNullException(nameof(Matrices));
+            if (VectorX is null) throw new ArgumentNullException(nameof(Matrices));
+            if (VectorY is null) throw new ArgumentNullException(nameof(Matrices));
         }
     }
 }

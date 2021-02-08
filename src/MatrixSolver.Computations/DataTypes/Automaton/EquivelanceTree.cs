@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace MatrixSolver.DataTypes.Automata
+namespace MatrixSolver.Computations.DataTypes.Automata
 {
     public class EquivalenceTree
     {

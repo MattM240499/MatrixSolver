@@ -1,7 +1,7 @@
 
 using System;
 using Extreme.Mathematics;
-using MatrixSolver.DataTypes;
+using MatrixSolver.Computations.DataTypes;
 using Xunit;
 
 namespace MatrixSolver.Tests.DataTypes

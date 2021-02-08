@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 
-namespace MatrixSolver.DataTypes.Automata
+namespace MatrixSolver.Computations.DataTypes.Automata
 {
     public static class AutomatonUtil
     {

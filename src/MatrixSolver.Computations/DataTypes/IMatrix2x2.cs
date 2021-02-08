@@ -1,7 +1,7 @@
 
 using Extreme.Mathematics;
 
-namespace MatrixSolver.DataTypes
+namespace MatrixSolver.Computations.DataTypes
 {
     /// <summary>
     /// A 2x2 Matrix

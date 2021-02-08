@@ -2,7 +2,7 @@
 using System;
 using Extreme.Mathematics;
 
-namespace MatrixSolver.Maths.Extensions
+namespace MatrixSolver.Computations.Maths.Extensions
 {
     /// <summary>
     /// Provides extensions for the <see cref="Extreme.Mathematics" /> Assembly

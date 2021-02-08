@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace MatrixSolver.DataTypes.Automata
+namespace MatrixSolver.Computations.DataTypes.Automata
 {
     /// <summary>
     /// An Automaton.
@@ -338,8 +338,6 @@ namespace MatrixSolver.DataTypes.Automata
         /// <summary>
         /// Returns a new automaton which is a minimzed version
         /// The input must be a DFA
-        /// TODO: write unit tests
-        /// TODO: Remove after replaced
         /// </summary>
         public Automaton MinimizeDFA()
         {

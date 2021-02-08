@@ -1,10 +1,10 @@
 
 using Xunit;
 using Extreme.Mathematics;
-using MatrixSolver.DataTypes;
+using MatrixSolver.Computations.DataTypes;
 using System;
 
-namespace MatrixSolver.Tests.DataTypes
+namespace MatrixSolver.Computations.Tests.DataTypes
 {
     public class ImmutableMatrix2x2Tests
     {
