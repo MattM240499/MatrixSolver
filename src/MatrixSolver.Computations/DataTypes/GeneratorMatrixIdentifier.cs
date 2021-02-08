@@ -1,5 +1,5 @@
 
-namespace MatrixSolver.DataTypes
+namespace MatrixSolver.Computations.DataTypes
 {
     public enum GeneratorMatrixIdentifier
     {

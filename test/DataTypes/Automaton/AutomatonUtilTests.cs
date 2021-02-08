@@ -2,10 +2,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using MatrixSolver.DataTypes.Automata;
+using MatrixSolver.Computations.DataTypes.Automata;
 using Xunit;
 
-namespace MatrixSolver.Tests.DataTypes.Automata
+namespace MatrixSolver.Computations.Tests.DataTypes.Automata
 {
     public class AutomatonUtilTests
     {

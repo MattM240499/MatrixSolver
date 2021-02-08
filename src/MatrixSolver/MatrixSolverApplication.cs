@@ -1,18 +1,22 @@
 ﻿using System;
-using System.Linq;
-using System.IO;
-using Newtonsoft.Json;
-using MatrixSolver.DataTypes;
-using Extreme.Mathematics;
 using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Windows;
+using Extreme.Mathematics;
+using MatrixSolver.Computations;
+using MatrixSolver.Computations.DataTypes;
+using Newtonsoft.Json;
 
 namespace MatrixSolver
 {
-    public class Program
+    class MatrixSolverApplication : Application
     {
-        public static void Main(string[] args)
+        protected override void OnStartup(StartupEventArgs e)
         {
-            // Step 0. Retrieve and parse input
+            // Application is running
+            // Process command line args
+            var args = e.Args;
             var file = args[0];
             var json = File.ReadAllText(file);
             var data = JsonConvert.DeserializeObject<InputData>(json);
@@ -22,9 +26,13 @@ namespace MatrixSolver
             var matrices = data.Matrices.Select(m => new ImmutableMatrix2x2(As2DArray(m, 2, 2))).ToArray();
             // Solve equation
             var sw = Stopwatch.StartNew();
-            var automaton = MatrixEquationSolutionFinder.TrySolveVectorReachabilityProblem(matrices, vectorX, vectorY);
+            var automaton = MatrixEquationSolutionFinder.SolveVectorReachabilityProblem(matrices, vectorX, vectorY);
             sw.Stop();
-            Console.WriteLine($"Program completed in {sw.ElapsedMilliseconds}ms");
+            Console.WriteLine($"Solution found in {sw.ElapsedMilliseconds}ms");
+
+            // Create main application window, starting minimized if specified
+            MainWindow mainWindow = new MainWindow(automaton);
+            mainWindow.Show();
         }
 
         public static BigRational[,] As2DArray(BigRational[][] Array2D, int leftSize, int rightSize)
@@ -39,5 +47,13 @@ namespace MatrixSolver
             }
             return newArray;
         }
+
+        [STAThread]
+        static void Main(string[] args)
+        {
+            new MatrixSolverApplication { Args = args }.Run();
+        }
+
+        public string[] Args { get; set; }
     }
 }

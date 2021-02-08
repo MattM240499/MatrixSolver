@@ -2,7 +2,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace MatrixSolver.DataTypes.Automata
+namespace MatrixSolver.Computations.DataTypes.Automata
 {
     public class TransitionMatrix<T> : IReadOnlyTransitionMatrix<T> where T : notnull
     {

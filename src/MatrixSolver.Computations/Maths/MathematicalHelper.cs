@@ -2,9 +2,9 @@
 using System;
 using System.Collections.Generic;
 using Extreme.Mathematics;
-using MatrixSolver.DataTypes;
+using MatrixSolver.Computations.DataTypes;
 
-namespace MatrixSolver.Maths
+namespace MatrixSolver.Computations.Maths
 {
     public static class MathematicalHelper
     {

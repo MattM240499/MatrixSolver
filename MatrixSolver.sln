@@ -3,9 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26124.0
 MinimumVisualStudioVersion = 15.0.26124.0
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MatrixSolver", "src\MatrixSolver.csproj", "{D4B3CE76-F509-42AC-A090-2625CC0463D0}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MatrixSolver.Computations", "src\MatrixSolver.Computations\MatrixSolver.Computations.csproj", "{D4B3CE76-F509-42AC-A090-2625CC0463D0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MatrixSolver.Tests", "test\MatrixSolver.Tests.csproj", "{933D16E9-B9B3-44CD-9A50-E0265426371C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MatrixSolver.Tests", "test\MatrixSolver.Computations.Tests.csproj", "{933D16E9-B9B3-44CD-9A50-E0265426371C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{3B1F56F1-E4B7-4650-B321-0BACC57DCA49}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MatrixSolver", "src\MatrixSolver\MatrixSolver.csproj", "{961FD2D7-49F7-4B2A-8E2F-6E971A37953F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -44,5 +48,20 @@ Global
 		{933D16E9-B9B3-44CD-9A50-E0265426371C}.Release|x64.Build.0 = Release|Any CPU
 		{933D16E9-B9B3-44CD-9A50-E0265426371C}.Release|x86.ActiveCfg = Release|Any CPU
 		{933D16E9-B9B3-44CD-9A50-E0265426371C}.Release|x86.Build.0 = Release|Any CPU
+		{961FD2D7-49F7-4B2A-8E2F-6E971A37953F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{961FD2D7-49F7-4B2A-8E2F-6E971A37953F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{961FD2D7-49F7-4B2A-8E2F-6E971A37953F}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{961FD2D7-49F7-4B2A-8E2F-6E971A37953F}.Debug|x64.Build.0 = Debug|Any CPU
+		{961FD2D7-49F7-4B2A-8E2F-6E971A37953F}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{961FD2D7-49F7-4B2A-8E2F-6E971A37953F}.Debug|x86.Build.0 = Debug|Any CPU
+		{961FD2D7-49F7-4B2A-8E2F-6E971A37953F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{961FD2D7-49F7-4B2A-8E2F-6E971A37953F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{961FD2D7-49F7-4B2A-8E2F-6E971A37953F}.Release|x64.ActiveCfg = Release|Any CPU
+		{961FD2D7-49F7-4B2A-8E2F-6E971A37953F}.Release|x64.Build.0 = Release|Any CPU
+		{961FD2D7-49F7-4B2A-8E2F-6E971A37953F}.Release|x86.ActiveCfg = Release|Any CPU
+		{961FD2D7-49F7-4B2A-8E2F-6E971A37953F}.Release|x86.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{961FD2D7-49F7-4B2A-8E2F-6E971A37953F} = {3B1F56F1-E4B7-4650-B321-0BACC57DCA49}
 	EndGlobalSection
 EndGlobal

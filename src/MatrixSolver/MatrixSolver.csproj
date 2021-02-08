@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+  <PropertyGroup>
+    <TargetFrameworks>netcoreapp3.1</TargetFrameworks>
+    <OutputType>WinExe</OutputType>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="AutomaticGraphLayout" Version="1.1.11" />
+    <PackageReference Include="AutomaticGraphLayout.Drawing" Version="1.1.11" />
+    <PackageReference Include="AutomaticGraphLayout.GraphViewerGDI" Version="1.1.11" />
+    <PackageReference Include="AutomaticGraphLayout.WpfGraphControl" Version="1.1.11" />
+    <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
+    <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../MatrixSolver.Computations/MatrixSolver.Computations.csproj" />
+  </ItemGroup>
+</Project>

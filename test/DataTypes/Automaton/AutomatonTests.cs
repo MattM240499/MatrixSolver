@@ -1,12 +1,12 @@
 using Xunit;
-using MatrixSolver.DataTypes.Automata;
+using MatrixSolver.Computations.DataTypes.Automata;
 using System;
 using System.Linq;
-using MatrixSolver.DataTypes;
+using MatrixSolver.Computations.DataTypes;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-namespace MatrixSolver.Tests.DataTypes.Automata
+namespace MatrixSolver.Computations.Tests.DataTypes.Automata
 {
     public class AutomatonTests
     {

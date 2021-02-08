@@ -1,7 +1,7 @@
 
 using System;
 using System.Diagnostics;
-using MatrixSolver.DataTypes.Automata;
+using MatrixSolver.Computations.DataTypes.Automata;
 using Xunit;
 
 namespace MatrixSolver.Tests.PerformanceTests

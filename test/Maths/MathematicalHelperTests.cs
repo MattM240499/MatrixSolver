@@ -1,11 +1,11 @@
 
 using System;
 using System.Linq;
-using MatrixSolver.DataTypes;
-using MatrixSolver.Maths;
+using MatrixSolver.Computations.DataTypes;
+using MatrixSolver.Computations.Maths;
 using Xunit;
 
-namespace MatrixSolver.Tests.Maths
+namespace MatrixSolver.Computations.Tests.Maths
 {
     public class MathematicalHelperTests
     {
@@ -33,6 +33,7 @@ namespace MatrixSolver.Tests.Maths
         [InlineData(-12, -8, 4, -1, 1)]
         [InlineData(0, 7, 7, 0, 1)]
         [InlineData(-7, 0, 7, -1, 0)]
+        [InlineData(197, 757, 1, 342, -89)]
         public void ExtendedEuclideanAlgorithm_CalculatesSolution(int number1, int number2, int expectedGcd, int expectedS, int expectedT)
         {
             var values = MathematicalHelper.ExtendedEuclideanAlgorithm(number1, number2);

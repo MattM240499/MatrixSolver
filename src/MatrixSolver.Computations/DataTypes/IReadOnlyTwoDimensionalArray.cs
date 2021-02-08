@@ -1,4 +1,4 @@
-namespace MatrixSolver.DataTypes
+namespace MatrixSolver.Computations.DataTypes
 {
     /// <summary>
     /// A 2D Array that is read only.

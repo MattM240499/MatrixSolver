@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace MatrixSolver.DataTypes.Automata
+namespace MatrixSolver.Computations.DataTypes.Automata
 {
     /// <summary>
     /// A transition matrix that is readonly.

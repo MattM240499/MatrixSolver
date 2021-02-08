@@ -3,7 +3,7 @@ using System;
 using System.Collections.ObjectModel;
 using Extreme.Mathematics;
 
-namespace MatrixSolver.DataTypes
+namespace MatrixSolver.Computations.DataTypes
 {
     /// <summary>
     /// A vector in 2d space

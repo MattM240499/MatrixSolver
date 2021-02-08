@@ -1,5 +1,5 @@
 
-namespace MatrixSolver.DataTypes
+namespace MatrixSolver.Computations.DataTypes
 {
     /// <summary>
     /// A Wrapper for a Two Dimensional Array. Allows exposing a readonly interface for the array.
