@@ -267,8 +267,6 @@ namespace MatrixSolver.Computations.DataTypes.Automata
                     var toStates = new List<int>(automaton.TransitionMatrix.GetStates(fromState, symbol));
                     foreach (var toState in toStates)
                     {
-                        // Delete the transition
-                        automaton.DeleteTransition(fromState, toState, Constants.RegularLanguage.R);
                         // Add a new state before and after
                         int beforeState = automaton.AddState();
                         int afterState = automaton.AddState();
@@ -289,7 +287,7 @@ namespace MatrixSolver.Computations.DataTypes.Automata
                     var xStates = automaton.GetStatesReachableFromStateWithSymbol(state, Constants.RegularLanguage.X);
                     foreach (var xState in xStates)
                     {
-                        var epsilonStates = automaton.GetStatesReachableFromStateWithSymbol(state, Constants.RegularLanguage.X, false);
+                        var epsilonStates = automaton.GetStatesReachableFromStateWithSymbol(xState, Constants.RegularLanguage.X, false);
                         foreach (var epsilonState in epsilonStates)
                         {
                             if (automaton.AddTransition(state, epsilonState, Automaton.Epsilon))
