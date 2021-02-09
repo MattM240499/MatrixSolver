@@ -38,7 +38,7 @@ namespace MatrixSolver
 
             SetStatusBar();
             graphViewer.MouseDown += MainWindow_MouseDown;
-            Loaded += (a, b) => CreateAndLayoutAndDisplayGraph(null,null);
+            Loaded += (a, b) => CreateAndLayoutAndDisplayGraph(null, null);
 
         }
 
@@ -78,6 +78,7 @@ namespace MatrixSolver
 
         public void CreateAndLayoutAndDisplayGraph(object sender, ExecutedRoutedEventArgs ex)
         {
+            var alphabetAndEpsilon = _automaton.Alphabet.Append(Automaton.Epsilon);
             try
             {
                 Graph graph = new Graph();
@@ -100,13 +101,13 @@ namespace MatrixSolver
                     {
                         node.Attr.Shape = Shape.Circle;
                     }
-                    
+
                     vertexLookup[state] = stateId;
                     graph.AddNode(node);
                 }
                 foreach (var state in _automaton.States)
                 {
-                    foreach (var symbol in _automaton.Alphabet)
+                    foreach (var symbol in alphabetAndEpsilon)
                     {
                         var reachableStates = _automaton.TransitionMatrix.GetStates(state, symbol);
                         // Should be 1 or 0 states, but for flexibility, we handle any number
