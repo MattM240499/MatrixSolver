@@ -85,5 +85,46 @@ namespace MatrixSolver.Computations
             public static char R = 'R';
             public static char[] Symbols = new char[] { X, S, R };
         }
+
+        public static class Automaton
+        {
+            public static DataTypes.Automata.Automaton Canonical;
+
+            static Automaton()
+            {
+                Canonical = new DataTypes.Automata.Automaton(RegularLanguage.Symbols);
+                var stateIdLookup = new Dictionary<int, int>();
+                var transitions = new[]
+                {
+                    // Qstart
+                    (0,1, RegularLanguage.X),
+                    (0,2, RegularLanguage.S),
+                    (0,3, RegularLanguage.R),
+                    // Qx
+                    (1,2, RegularLanguage.S),
+                    (1,3, RegularLanguage.R),
+                    // Qs
+                    (2,3, RegularLanguage.R),
+                    // Qr
+                    (3,4, RegularLanguage.R),
+                    (3,2, RegularLanguage.S),
+                    // Qrr
+                    (4,2, RegularLanguage.S),
+
+                };
+                for(int i = 0; i <5; i++)
+                {
+                    var state = Canonical.AddState();
+                    Canonical.SetAsGoalState(state);
+                    stateIdLookup[i] = state;
+                }
+                Canonical.SetAsStartState(stateIdLookup[0]);
+                
+                foreach(var transition in transitions)
+                {
+                    Canonical.AddTransition(stateIdLookup[transition.Item1],stateIdLookup[transition.Item2], transition.Item3);
+                }
+            }
+        }
     }
 }

@@ -224,10 +224,7 @@ namespace MatrixSolver.Computations.DataTypes.Automata
                     if (this._goalStates.Contains(currentState))
                     {
                         isGoalState = true;
-                        if (isStartState)
-                        {
-                            break;
-                        }
+                        break;
                     }
                 }
                 var currentStateId = automaton.AddState(isStartState: isStartState, isGoalState: isGoalState);
