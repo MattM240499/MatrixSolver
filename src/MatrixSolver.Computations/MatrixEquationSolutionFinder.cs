@@ -102,13 +102,14 @@ namespace MatrixSolver.Computations
             var dfa1 = solutionMatrixAutomaton.ToDFA();
             var dfa2 = matrixProductAutomaton.ToDFA();
 
-            dfa1.UpdateDFAToCanonicalForm();
-            dfa2.UpdateDFAToCanonicalForm();
+            var canonicalDfa1 = dfa1.UpdateAutomatonToAcceptCanonicalWords();
+            var canonicalDfa2 = dfa2.UpdateAutomatonToAcceptCanonicalWords();
 
-            var canonicalDfa1 = dfa1.ToDFA();
-            var canonicalDfa2 = dfa2.ToDFA();
-
-            var intersectedDFA = canonicalDfa1.IntersectionWithDFA(canonicalDfa2);
+            var intersectedDFA = Constants.Automaton.Canonical
+                .IntersectionWithDFA(canonicalDfa1)
+                .IntersectionWithDFA(canonicalDfa2)
+                ;
+                
             var minimizedDfa = intersectedDFA.MinimizeDFA();
 
             return minimizedDfa;

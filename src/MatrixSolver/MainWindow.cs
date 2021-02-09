@@ -107,14 +107,24 @@ namespace MatrixSolver
                 }
                 foreach (var state in _automaton.States)
                 {
+                    var reachableStatesLookup = new Dictionary<int, List<char>>();
                     foreach (var symbol in alphabetAndEpsilon)
                     {
                         var reachableStates = _automaton.TransitionMatrix.GetStates(state, symbol);
                         // Should be 1 or 0 states, but for flexibility, we handle any number
                         foreach (var reachableState in reachableStates)
                         {
-                            graph.AddEdge(vertexLookup[state], symbol.ToString(), vertexLookup[reachableState]);
+                            if(!reachableStatesLookup.TryGetValue(reachableState, out var chars))
+                            {
+                                chars = new List<char>(_automaton.Alphabet.Count);
+                                reachableStatesLookup.Add(reachableState, chars);
+                            }
+                            chars.Add(symbol);
                         }
+                    }
+                    foreach(var (reachableState, symbols) in reachableStatesLookup)
+                    {
+                        graph.AddEdge(vertexLookup[state], String.Join(',', symbols), vertexLookup[reachableState]);
                     }
                 }
 

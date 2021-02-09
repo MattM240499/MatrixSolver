@@ -182,6 +182,68 @@ namespace MatrixSolver.Computations.Tests.DataTypes.Automata
                 new[] { (0, 2), (0, 5), (1, 4), (2, 0), (2, 5), (3, 6), (4, 1) });
         }
 
+        [Fact]
+        public void AddXSurroundedPaths_CorrectlyAddsTransitions()
+        {
+            var states = new[] { 0, 1, 2 };
+            var transitions = new (int, int, char)[]
+            {
+                (0, 1, Constants.RegularLanguage.R),
+                (1, 2, Constants.RegularLanguage.S),
+            };
+            var automaton = InitialiseAutomaton(states, transitions);
+            automaton.SetAsStartState(0);
+            automaton.SetAsGoalState(2);
+            AutomatonUtil.AddXSurroundedPaths(automaton);
+
+            Assert.Equal(7, automaton.States.Count);
+            Assert.True(automaton.IsValidWord("RS"));
+            Assert.True(automaton.IsValidWord("XRXS"));
+            Assert.True(automaton.IsValidWord("XRSX"));
+            Assert.True(automaton.IsValidWord("RXSX"));
+
+            Assert.False(automaton.IsValidWord("X"));
+            Assert.False(automaton.IsValidWord("XRXSX"));
+            Assert.False(automaton.IsValidWord("XXRS"));
+            Assert.False(automaton.IsValidWord("RXXSX"));
+        }
+
+        [Fact]
+        public void AddXSurroundedPaths_CorrectlyAddsTransitionsInSelfLoop()
+        {
+            var states = new[] { 0, 1 };
+            var transitions = new (int, int, char)[]
+            {
+                (0, 0, Constants.RegularLanguage.S),
+                (0, 1, Constants.RegularLanguage.R),
+                (1, 1, Constants.RegularLanguage.S),
+            };
+            var automaton = InitialiseAutomaton(states, transitions);
+            automaton.SetAsStartState(0);
+            automaton.SetAsGoalState(1);
+            AutomatonUtil.AddXSurroundedPaths(automaton);
+
+            Assert.Equal(8, automaton.States.Count);
+            Assert.True(automaton.IsValidWord("R"));
+            Assert.True(automaton.IsValidWord("RS"));
+            Assert.True(automaton.IsValidWord("SR"));
+            Assert.True(automaton.IsValidWord("SRS"));
+            Assert.True(automaton.IsValidWord("XRX"));
+            Assert.True(automaton.IsValidWord("RXSX"));
+            Assert.True(automaton.IsValidWord("SXRXS"));
+            Assert.True(automaton.IsValidWord("XSRSX"));
+            Assert.True(automaton.IsValidWord("XSXXRXXSXXSX"));
+
+            Assert.False(automaton.IsValidWord("X"));
+            Assert.False(automaton.IsValidWord("XR"));
+            Assert.False(automaton.IsValidWord("RX"));
+            Assert.False(automaton.IsValidWord("XSR"));
+            Assert.False(automaton.IsValidWord("SRX"));
+            Assert.False(automaton.IsValidWord("SXR"));
+            Assert.False(automaton.IsValidWord("XSXRX"));
+        }
+        
+
         private Automaton InitialiseAutomaton(int[] states, (int fromState, int toState, char symbol)[] transitions)
         {
             var automaton = new Automaton(Constants.RegularLanguage.Symbols);

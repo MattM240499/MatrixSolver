@@ -189,11 +189,13 @@ namespace MatrixSolver.Computations.DataTypes.Automata
         /// <summary>
         /// Updates a DFA to canonical form.
         /// </summary>
-        public static Automaton UpdateDFAToCanonicalForm(this Automaton automaton)
+        public static Automaton UpdateAutomatonToAcceptCanonicalWords(this Automaton automaton)
         {
             return automaton
                 .PopulateDFAWithXAndEpsilonTransitions()
-                .InsertXStatesAroundRAndSTransitions();
+                .AddXSurroundedPaths()
+                .ToDFA()
+                ;
         }
 
         internal static Automaton PopulateDFAWithXAndEpsilonTransitions(this Automaton automaton)
@@ -212,9 +214,13 @@ namespace MatrixSolver.Computations.DataTypes.Automata
                         var epsilonStates = automaton.GetStatesReachableFromStateWithSymbol(xReachableState, Constants.RegularLanguage.X, false);
                         foreach (var epsilonState in epsilonStates)
                         {
-                            if (state != epsilonState && automaton.AddTransition(state, epsilonState, Automaton.Epsilon))
+                            // Discard epsilon transition that loop back on the same state as they add no value
+                            if (state != epsilonState)
                             {
-                                changes = true;
+                                if(automaton.AddTransition(state, epsilonState, Automaton.Epsilon))
+                                {
+                                    changes = true;
+                                }
                             }
                         }
                     }
@@ -253,10 +259,7 @@ namespace MatrixSolver.Computations.DataTypes.Automata
             return automaton;
         }
 
-        /// <summary>
-        /// TODO: Write tests plz
-        /// </summary>
-        internal static Automaton InsertXStatesAroundRAndSTransitions(this Automaton automaton)
+        internal static Automaton AddXSurroundedPaths(this Automaton automaton)
         {
             var states = new List<int>(automaton.States);
             var symbols = new[] { Constants.RegularLanguage.R, Constants.RegularLanguage.S };
