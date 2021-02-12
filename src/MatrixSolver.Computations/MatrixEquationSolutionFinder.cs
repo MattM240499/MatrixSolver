@@ -28,88 +28,37 @@ namespace MatrixSolver.Computations
             Console.WriteLine($"y =  {vectorY}");
             Console.WriteLine("-------------------------");
 
+            // Scale down by gcd(x1, x2) = gcd(y1, y2)
             var scaledVectorX = scalar * vectorX;
             var scaledVectorY = scalar * vectorY;
-
-            Console.WriteLine($"ScaledX = {scaledVectorX}");
-            Console.WriteLine($"ScaledY = {scaledVectorY}");
-
+            // Calcualte A(x)^-1, A(y)
             var Ax = CalculateMatrixA(scaledVectorX);
             var Ay = CalculateMatrixA(scaledVectorY);
-
-            Console.WriteLine($"Ax = {Ax}");
-            Console.WriteLine($"Ay = {Ay}");
-
-            if (Ax.Determinant() != 1)
-            {
-                throw new ApplicationException("Ax is not in SL(2,Z)");
-            }
-
-            if (Ay.Determinant() != 1)
-            {
-                throw new ApplicationException("Ay is not in SL(2,Z)");
-            }
-
             var AxInverse = Ax.Inverse();
+
             Console.WriteLine($"General solution is of the form: {Ay} * {Constants.Matrices.T}^t * {AxInverse}");
+            // Convert each matrix we require for the final form into a canonical string
+            var AyAsCanonicalString = MathematicalHelper.ConvertMatrixToCanonicalString(Ay);
+            var AxAsCanonicalString = MathematicalHelper.ConvertMatrixToCanonicalString(AxInverse);
+            var TAsCanonicalString = String.Join("", Constants.Matrices.GeneratorMatrixIdentifierLookup[GeneratorMatrixIdentifier.T]);
+            var TInverseAsCanonicalString = String.Join("", Constants.Matrices.GeneratorMatrixIdentifierLookup[GeneratorMatrixIdentifier.TInverse]);
 
-            // Output some solutions
-            for (int i = 0; i < 10; i++)
-            {
-                var sol = Ay * (Constants.Matrices.T ^ i) * AxInverse;
-                Console.WriteLine($"M{i} = {sol}");
+            var matricesAsGeneratorMatrices = matrices.Select(m => MathematicalHelper.ConvertMatrixToCanonicalString(m));
 
-                // Validate solution is correct (TODO: Remove)
-                var calculatedY = sol * vectorX;
-                if (!(calculatedY).Equals(vectorY))
-                {
-                    throw new ApplicationException($"Solution {sol} is not a solution. Y calculated to have value {calculatedY} but expected {vectorY}");
-                }
-            }
+            string matrixSolutionRegex = String.Format("{0}(({1})*|({2})*){3}",
+                AyAsCanonicalString, TAsCanonicalString, TInverseAsCanonicalString, AxAsCanonicalString);
+            string matrixProductRegex = $"({String.Join("|", matricesAsGeneratorMatrices)})*";
+            
+            Console.WriteLine($"Solutions of Mx = y as a regex are of the form: {matrixSolutionRegex}");
+            Console.WriteLine($"Solution as a product of input matrices as a regex are of the form: {matrixProductRegex}");
 
-            var AyAsGeneratorMatrices = MathematicalHelper.ConvertMatrixToGeneratorFormAsString(Ay);
-            var AxInverseAsGeneratorMatrices = MathematicalHelper.ConvertMatrixToGeneratorFormAsString(AxInverse);
-            var TAsGeneratorMatrices = Constants.Matrices.GeneratorMatrixIdentifierLookup[GeneratorMatrixIdentifier.T];
-            var TInverseAsGeneratorMatrices = Constants.Matrices.GeneratorMatrixIdentifierLookup[GeneratorMatrixIdentifier.TInverse];
-
-            var matricesAsGeneratorMatrices = matrices.Select(m => MathematicalHelper.ConvertMatrixToGeneratorFormAsString(m));
-
-            // TODO: Can we optimise this?
-            string matrixSolutionForm = String.Join("",
-                AyAsGeneratorMatrices.Select(i => i.ToString())
-                    .Append("((")
-                    .Concat(TAsGeneratorMatrices.Select(i => i.ToString()))
-                    .Append(")*")
-                    .Append("|")
-                    .Append("(")
-                    .Concat(TInverseAsGeneratorMatrices.Select(i => i.ToString()))
-                    .Append(")*)")
-                    .Concat(AxInverseAsGeneratorMatrices.Select(i => i.ToString()))
-            );
-
-            string matrixProductForm = "(" +
-                    string.Join("|",
-                    matricesAsGeneratorMatrices.Select(i =>
-                        String.Join("", i.Select(j => j.ToString())))
-                    ) +
-                    ")*";
-            Console.WriteLine($"Solutions of Mx = y as a regex are of the form: {matrixSolutionForm}");
-            Console.WriteLine($"Solution as a product of input matrices as a regex are of the form: {matrixProductForm}");
-
-            var solutionMatrixAutomaton = AutomatonUtil.RegexToAutomaton(matrixSolutionForm, Constants.RegularLanguage.Symbols);
-            var matrixProductAutomaton = AutomatonUtil.RegexToAutomaton(matrixProductForm, Constants.RegularLanguage.Symbols);
-
-            var dfa1 = solutionMatrixAutomaton.ToDFA();
-            var dfa2 = matrixProductAutomaton.ToDFA();
-
-            var canonicalDfa1 = dfa1.UpdateAutomatonToAcceptCanonicalWords();
-            var canonicalDfa2 = dfa2.UpdateAutomatonToAcceptCanonicalWords();
+            var matrixSolutionAsCanonicalDfa = RegexToCanonicalDfa(matrixSolutionRegex);
+            var matrixProductAsCanonicalDfa = RegexToCanonicalDfa(matrixProductRegex);
 
             var intersectedDFA = Constants.Automaton.Canonical
-                .IntersectionWithDFA(canonicalDfa1)
-                .IntersectionWithDFA(canonicalDfa2)
+                .IntersectionWithDFA(matrixSolutionAsCanonicalDfa)
+                .IntersectionWithDFA(matrixProductAsCanonicalDfa)
                 ;
-                
             var minimizedDfa = intersectedDFA.MinimizeDFA();
 
             return minimizedDfa;
@@ -160,6 +109,21 @@ namespace MatrixSolver.Computations
             {
                 throw new ArgumentException("Vector had a non integer element.");
             }
+        }
+
+        /// <summary>
+        /// TODO: Unit tests
+        /// </summary>
+        private static Automaton RegexToCanonicalDfa(string regex)
+        {
+            return AutomatonUtil
+                .RegexToAutomaton(regex, Constants.RegularLanguage.Symbols)
+                // It isn't required to convert to DFA, but as it is an inexpensive operation for the automaton created via the thompson construction, 
+                // it probably will end up saving time overall by reducing the time on the other steps.
+                .ToDFA()
+                .UpdateAutomatonToAcceptCanonicalWords()
+                .ToDFA()
+                .MinimizeDFA(false);
         }
     }
 }

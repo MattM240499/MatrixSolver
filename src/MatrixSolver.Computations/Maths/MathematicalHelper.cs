@@ -1,6 +1,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Extreme.Mathematics;
 using MatrixSolver.Computations.DataTypes;
 
@@ -78,7 +79,7 @@ namespace MatrixSolver.Computations.Maths
         /// are equivelent to the original matrix.
         /// Based on the algorithm described here: https://kconrad.math.uconn.edu/blurbs/grouptheory/SL(2,Z).pdf
         /// </summary>
-        public static List<GeneratorMatrixIdentifier> ConvertMatrixToGeneratorFormAsString(ImmutableMatrix2x2 matrix)
+        public static string ConvertMatrixToCanonicalString(ImmutableMatrix2x2 matrix)
         {
             // The process is 3 steps. First convert the matrix to use the T and S matrices.
             // Then T, T^-1 and S^-1 need to be replaced to use S,R,X
@@ -86,7 +87,7 @@ namespace MatrixSolver.Computations.Maths
             var matrixProduct = ConvertMatrixToUseTAndSGeneratorMatrices(matrix)
                 .ReplaceTAndInverseWithStandardGenerators()
                 .SimplifyToCanonicalForm();
-            return matrixProduct;
+            return String.Join("", matrixProduct.Select(m => m.ToString()));
         }
 
         private static List<GeneratorMatrixIdentifier> ConvertMatrixToUseTAndSGeneratorMatrices(ImmutableMatrix2x2 matrix)
@@ -190,7 +191,7 @@ namespace MatrixSolver.Computations.Maths
             // Now simplify by removing instance of S^2 and T^3. This leverages the fact that S^2 = T^3 = X = -I
             var consecutiveCharacter = GeneratorMatrixIdentifier.X;
             bool changes = true;
-            // TODO: Potential optimisation: Can we remove the need for insert/remove actions
+            // TODO: Potential optimisation: Insert/Remove actions are expensive operations on the list. Could we use an alternative approach?
             // - LinkedList?
             // - Create a new list. (Will need to track multiple indexes (think of simplifying: RSRRRSRR = epsilon))
             while (changes)
@@ -248,26 +249,6 @@ namespace MatrixSolver.Computations.Maths
                 matrixProduct.Insert(0, GeneratorMatrixIdentifier.X);
             }
             return matrixProduct;
-        }
-
-        /// <summary>
-        /// Verifies a matrix product is equal to a given matrix
-        /// TODO: Move this to the test project
-        /// </summary>
-        public static bool IsEqual(IReadOnlyCollection<GeneratorMatrixIdentifier> matrices, ImmutableMatrix2x2 matrix)
-        {
-            var workingMatrix = Constants.Matrices.I;
-            foreach (var matrixIdentifier in matrices)
-            {
-                var nextMatrix = Constants.Matrices.MatrixIdentifierDictionary[matrixIdentifier];
-                workingMatrix = workingMatrix * nextMatrix;
-            }
-
-            if (!workingMatrix.Equals(matrix))
-            {
-                return false;
-            }
-            return true;
         }
     }
 }

@@ -194,7 +194,6 @@ namespace MatrixSolver.Computations.DataTypes.Automata
             return automaton
                 .PopulateDFAWithXAndEpsilonTransitions()
                 .AddXSurroundedPaths()
-                .ToDFA()
                 ;
         }
 

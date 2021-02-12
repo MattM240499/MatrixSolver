@@ -46,14 +46,11 @@ namespace MatrixSolver.Computations.Tests.Maths
         [InlineData("XSRRSRSR")]
         [InlineData("SRRSRSRSRSRSRSRRSRSRSRSRSRSRSRSRSRRSRSRSRSRRSRRSRR")]
         [InlineData("XRRSRRSRR")]
-        public void ConvertMatrixToGeneratorFormAsString_ConvertsCorrectly(string word)
+        public void ConvertMatrixToCanonicalString_ConvertsCorrectly(string expectedWord)
         {
-            // Convert the letters to their respective matrix ID. This is the word.
-            var expectedWord = word
-                .Select(w => (GeneratorMatrixIdentifier)Enum.Parse(typeof(GeneratorMatrixIdentifier), w.ToString()));
             // Convert the word to the actual matrix product
             var matrices = expectedWord
-                .Select(i => Constants.Matrices.MatrixIdentifierDictionary[i]);
+                .Select(i => RegularLanguageHelper.MatrixLookup[i]);
             
             // Calculate the input matrix
             var inputMatrix = Constants.Matrices.I;
@@ -62,11 +59,11 @@ namespace MatrixSolver.Computations.Tests.Maths
                 inputMatrix *= matrix;
             }
             // Make sure our conversion steps assured the same matrix is retained
-            Assert.True(MathematicalHelper.IsEqual(expectedWord.ToArray(), inputMatrix));
+            Assert.True(RegularLanguageHelper.IsEqual(expectedWord, inputMatrix));
             // Finally, run the conversion
-            var matrixProduct = MathematicalHelper.ConvertMatrixToGeneratorFormAsString(inputMatrix);
+            var matrixProduct = MathematicalHelper.ConvertMatrixToCanonicalString(inputMatrix);
             // Ensure the same matrix product in canonical form is return
-            Assert.True(MathematicalHelper.IsEqual(matrixProduct, inputMatrix));
+            Assert.True(RegularLanguageHelper.IsEqual(matrixProduct, inputMatrix));
             Assert.Equal(expectedWord, matrixProduct);
         }
 
