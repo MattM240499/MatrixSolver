@@ -90,9 +90,9 @@ namespace MatrixSolver.Computations.Maths
             return String.Join("", matrixProduct.Select(m => m.ToString()));
         }
 
-        private static List<GeneratorMatrixIdentifier> ConvertMatrixToUseTAndSGeneratorMatrices(ImmutableMatrix2x2 matrix)
+        private static LinkedList<GeneratorMatrixIdentifier> ConvertMatrixToUseTAndSGeneratorMatrices(ImmutableMatrix2x2 matrix)
         {
-            List<GeneratorMatrixIdentifier> matrixProduct = new List<GeneratorMatrixIdentifier>();
+            LinkedList<GeneratorMatrixIdentifier> matrixProduct = new LinkedList<GeneratorMatrixIdentifier>();
             // Setup aliases for a and c
             Func<BigInteger> a = () => matrix.UnderlyingValues[0, 0].Numerator;
             Func<BigInteger> c = () => matrix.UnderlyingValues[1, 0].Numerator;
@@ -101,7 +101,7 @@ namespace MatrixSolver.Computations.Maths
                 if (BigInteger.Abs(a()) < BigInteger.Abs(c()))
                 {
                     matrix = Constants.Matrices.S * matrix;
-                    matrixProduct.Add(GeneratorMatrixIdentifier.SInverse);
+                    matrixProduct.AddLast(GeneratorMatrixIdentifier.SInverse);
                 }
             };
 
@@ -125,7 +125,7 @@ namespace MatrixSolver.Computations.Maths
 
                 for (int i = 0; i < BigInteger.Abs(quotient); i++)
                 {
-                    matrixProduct.Add(targetMatrixIdentifier);
+                    matrixProduct.AddLast(targetMatrixIdentifier);
                 }
 
                 PerformSSwitchIfNeeded();
@@ -139,7 +139,7 @@ namespace MatrixSolver.Computations.Maths
             {
                 // We need to add a minus to the front (I.e. X)
                 matrix = Constants.Matrices.X * matrix;
-                matrixProduct.Add(GeneratorMatrixIdentifier.X);
+                matrixProduct.AddLast(GeneratorMatrixIdentifier.X);
             }
 
             var b = matrix.UnderlyingValues[0, 1].Numerator;
@@ -150,103 +150,149 @@ namespace MatrixSolver.Computations.Maths
             }
             for (int i = 0; i < BigInteger.Abs(b); i++)
             {
-                matrixProduct.Add(targetMatrix2);
+                matrixProduct.AddLast(targetMatrix2);
             }
             return matrixProduct;
         }
 
-        public static List<GeneratorMatrixIdentifier> ReplaceTAndInverseWithStandardGenerators(this List<GeneratorMatrixIdentifier> matrixProduct)
+        public static LinkedList<GeneratorMatrixIdentifier> ReplaceTAndInverseWithStandardGenerators(this LinkedList<GeneratorMatrixIdentifier> matrixProduct)
         {
-            var standardGeneratorList = new List<GeneratorMatrixIdentifier>(matrixProduct.Count);
-            for (int i = 0; i < matrixProduct.Count; i++)
+            var currentNode = matrixProduct.First;
+            while (currentNode != null)
             {
-                var element = matrixProduct[i];
-                if (element == GeneratorMatrixIdentifier.T || element == GeneratorMatrixIdentifier.TInverse || element == GeneratorMatrixIdentifier.SInverse)
+                if (currentNode.Value == GeneratorMatrixIdentifier.T ||
+                    currentNode.Value == GeneratorMatrixIdentifier.TInverse ||
+                    currentNode.Value == GeneratorMatrixIdentifier.SInverse)
                 {
-                    standardGeneratorList.AddRange(Constants.Matrices.GeneratorMatrixIdentifierLookup[element]);
+                    var toRemoveNode = currentNode;
+                    // And then replace it with it's implementation
+                    foreach (var element in Constants.Matrices.GeneratorMatrixIdentifierLookup[currentNode.Value])
+                    {
+                        currentNode = matrixProduct.AddAfter(currentNode, element);
+                    }
+                    // Finally remove the initial node.
+                    matrixProduct.Remove(toRemoveNode);
                 }
-                else
-                {
-                    standardGeneratorList.Add(element);
-                }
+                currentNode = currentNode.Next;
             }
-            return standardGeneratorList;
+            return matrixProduct;
         }
 
-        public static List<GeneratorMatrixIdentifier> SimplifyToCanonicalForm(this List<GeneratorMatrixIdentifier> matrixProduct)
+        private static Dictionary<char, int> XEqualityLookup = new Dictionary<char, int>
+        {
+            ['R'] = 3,
+            ['S'] = 2
+        };
+
+        public static LinkedList<GeneratorMatrixIdentifier> SimplifyToCanonicalForm(this LinkedList<GeneratorMatrixIdentifier> matrixProduct)
         {
             // First remove all the X's. Using the fact that X = -I we can remove any instances. 
             // However, we may need to add an X for the sign at the front if an odd number of X's are removed
             // The 'negative' variable will track whether the simplified matrix is -1 or 1 times the original matrix.
             bool negative = false;
-            for (int i = matrixProduct.Count - 1; i >= 0; i--)
+            var currentNode = matrixProduct.First;
+            while (currentNode != null)
             {
-                var element = matrixProduct[i];
-                if (element == GeneratorMatrixIdentifier.X)
+                var next = currentNode.Next;
+                if (currentNode.Value == GeneratorMatrixIdentifier.X)
                 {
-                    matrixProduct.RemoveAt(i);
+                    matrixProduct.Remove(currentNode);
                     negative = !negative;
                 }
+                currentNode = next;
             }
             // Now simplify by removing instance of S^2 and T^3. This leverages the fact that S^2 = T^3 = X = -I
-            var consecutiveCharacter = GeneratorMatrixIdentifier.X;
-            bool changes = true;
-            // TODO: Potential optimisation: Insert/Remove actions are expensive operations on the list. Could we use an alternative approach?
-            // - LinkedList?
-            // - Create a new list. (Will need to track multiple indexes (think of simplifying: RSRRRSRR = epsilon))
-            while (changes)
+            var consecutiveCharacter = GeneratorMatrixIdentifier.None;
+            int consecutiveCharacterCount = 0;
+            currentNode = matrixProduct.First;
+            // Go backwards, 
+            while (currentNode != null)
             {
-                int consecutiveCharacterCount = 0;
-                changes = false;
-
-                for (int i = matrixProduct.Count - 1; i >= 0; i--)
+                bool remove = false;
+                var element = currentNode.Value;
+                if (element != consecutiveCharacter)
                 {
-                    bool remove = false;
-                    var element = matrixProduct[i];
-                    if (element != consecutiveCharacter)
+                    consecutiveCharacterCount = 1;
+                    consecutiveCharacter = element;
+                }
+                else
+                {
+                    consecutiveCharacterCount += 1;
+                }
+
+                switch (element)
+                {
+                    case GeneratorMatrixIdentifier.R:
+                        if (consecutiveCharacterCount == 3)
+                        {
+                            remove = true;
+                        }
+                        break;
+                    case GeneratorMatrixIdentifier.S:
+                        if (consecutiveCharacterCount == 2)
+                        {
+                            remove = true;
+                        }
+                        break;
+                    default:
+                        throw new InvalidOperationException($"Unexpected element {element}");
+                }
+
+                if (remove)
+                {
+                    // Remove all the consecutive characters
+                    for (int j = 0; j < consecutiveCharacterCount; j++)
                     {
-                        consecutiveCharacterCount = 1;
-                        consecutiveCharacter = element;
+                        var previous = currentNode.Previous!;
+                        matrixProduct.Remove(currentNode);
+                        currentNode = previous;
+                    }
+                    // If we removed elements up to the first element, the currentNode will be null here.
+                    // Therefore, we can simply use the element at the start of the sequence
+                    if(currentNode == null)
+                    {
+                        currentNode = matrixProduct.First;
                     }
                     else
                     {
-                        consecutiveCharacterCount += 1;
-                    }
-
-                    switch (element)
-                    {
-                        case GeneratorMatrixIdentifier.R:
-                            if (consecutiveCharacterCount == 3)
-                            {
-                                remove = true;
-                            }
-                            break;
-                        case GeneratorMatrixIdentifier.S:
-                            if (consecutiveCharacterCount == 2)
-                            {
-                                remove = true;
-                            }
-                            break;
-                        default:
-                            break;
-                    }
-
-                    if (remove)
-                    {
-                        changes = true;
-                        for (int j = 0; j < consecutiveCharacterCount; j++)
+                        // Reset the count
+                        switch(consecutiveCharacter)
                         {
-                            matrixProduct.RemoveAt(i);
+                            case GeneratorMatrixIdentifier.R:
+                                // Preceeding R must have been a single S, or there would have been cancellations previously
+                                consecutiveCharacter = GeneratorMatrixIdentifier.S;
+                                consecutiveCharacterCount = 1;
+                                break;
+                            case GeneratorMatrixIdentifier.S:
+                                // We know, that preceeding S must have been an R, but it could have been preceeded by an R or an S (SR, RR),
+                                // So we must check from that character onwards. 
+                                consecutiveCharacter = GeneratorMatrixIdentifier.None;
+                                consecutiveCharacterCount = 0;
+                                // If we are at the end of the string once again.
+                                if(currentNode.Previous != null)
+                                {
+                                    currentNode = currentNode.Previous;
+                                }
+                                break;
+                            default:
+                                throw new InvalidOperationException($"Unexpected element {element}");
                         }
-                        negative = !negative;
-                        consecutiveCharacterCount = 0;
                     }
+                    
+                    // These consecutive characters are cancelled because they are = X = -I, so removal changes the sign of the final expression
+                    negative = !negative;
+                    consecutiveCharacterCount = 0;
+                }
+                else
+                {
+                    currentNode = currentNode.Next;
                 }
             }
+
             // Finally, if an odd number of X's were removed, then add an X to the front
             if (negative)
             {
-                matrixProduct.Insert(0, GeneratorMatrixIdentifier.X);
+                matrixProduct.AddFirst(GeneratorMatrixIdentifier.X);
             }
             return matrixProduct;
         }

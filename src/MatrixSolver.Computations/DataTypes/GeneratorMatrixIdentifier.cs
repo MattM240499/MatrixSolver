@@ -4,6 +4,10 @@ namespace MatrixSolver.Computations.DataTypes
     public enum GeneratorMatrixIdentifier
     {
         /// <summary>
+        /// Placeholder.
+        /// </summary> 
+        None = 0,
+        /// <summary>
         /// Identifier for the matrix <see cref="Constants.Matrices.T" />
         /// </summary>
         T = 1,
