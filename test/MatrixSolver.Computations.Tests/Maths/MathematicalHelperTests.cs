@@ -1,5 +1,6 @@
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using MatrixSolver.Computations.DataTypes;
 using MatrixSolver.Computations.Maths;
@@ -71,12 +72,12 @@ namespace MatrixSolver.Computations.Tests.Maths
         [InlineData("XXXXXXXXXXSSSSSSSSSSSSRRRRRRRRRRRR", "")]
         [InlineData("RRSRSRRRSRRSR", "X")]
         [InlineData("XRRSRRSRR", "XRRSRRSRR")]
+        [InlineData("SRRSRRRSRSRRSS", "XRR")]
         public void SimplifyToCanonicalForm_SimplifiesCorrectly(string input, string expected)
         {
             // Convert the letters to their respective matrix ID. This is the word.
-            var inputWord = input
-                .Select(w => (GeneratorMatrixIdentifier)Enum.Parse(typeof(GeneratorMatrixIdentifier), w.ToString()))
-                .ToList();
+            var inputWord = new LinkedList<GeneratorMatrixIdentifier>(input
+                .Select(w => (GeneratorMatrixIdentifier)Enum.Parse(typeof(GeneratorMatrixIdentifier), w.ToString())));
 
             var expectedWord = expected
                 .Select(w => (GeneratorMatrixIdentifier)Enum.Parse(typeof(GeneratorMatrixIdentifier), w.ToString()));

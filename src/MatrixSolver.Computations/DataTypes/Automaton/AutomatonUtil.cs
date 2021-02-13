@@ -2,7 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
+using System.Text;
 
 namespace MatrixSolver.Computations.DataTypes.Automata
 {
@@ -112,7 +112,7 @@ namespace MatrixSolver.Computations.DataTypes.Automata
             char nextOperator;
             // First add the concatenationOperator variable
             bool skipNext = true;
-            string newRegex = "";
+            var newRegexSb = new StringBuilder(regex.Length * 2);
             for (int i = 0; i < regex.Length; i++)
             {
                 var character = regex[i];
@@ -130,20 +130,21 @@ namespace MatrixSolver.Computations.DataTypes.Automata
                     case '(':
                         if (!skipThis)
                         {
-                            newRegex += ConcatenationOperator;
+                            newRegexSb.Append(ConcatenationOperator);
                         }
                         skipNext = true;
                         break;
                     default:
                         if (!skipThis)
                         {
-                            newRegex += ConcatenationOperator;
+                            newRegexSb.Append(ConcatenationOperator);
                         }
                         break;
                 }
 
-                newRegex += character;
+                newRegexSb.Append(character);
             }
+            var newRegex = newRegexSb.ToString();
             // Now apply the Shunting-Yard Algorithm
             // https://medium.com/@gregorycernera/converting-regular-expressions-to-postfix-notation-with-the-shunting-yard-algorithm-63d22ea1cf88
             foreach (var character in newRegex)
