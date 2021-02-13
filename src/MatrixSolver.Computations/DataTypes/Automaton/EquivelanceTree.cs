@@ -7,8 +7,12 @@ namespace MatrixSolver.Computations.DataTypes.Automata
     public class EquivalenceTree
     {
         public Dictionary<int, EquivalenceBranch> EquivalenceLookup { get; }
+        /// <summary>
+        /// All known equivalences.
+        /// </summary>
         public List<EquivalenceBranch> Equivalences { get; }
         public Automaton Automaton { get; }
+        /// <summary> Branches directly from the root </summary>
         private readonly List<EquivalenceBranch> _branches;
 
         public EquivalenceTree(Automaton automaton)
@@ -19,8 +23,7 @@ namespace MatrixSolver.Computations.DataTypes.Automata
             var finalStates = new LinkedList<int>();
             var nonFinalStates = new LinkedList<int>();
             Automaton = automaton;
-            var finalBranch = new EquivalenceBranch(finalStates, this);
-            var nonFinalBranch = new EquivalenceBranch(nonFinalStates, this);
+            
             nonFinalStates.AddLast(-1);
             foreach (var state in automaton.States)
             {
@@ -33,18 +36,20 @@ namespace MatrixSolver.Computations.DataTypes.Automata
                     nonFinalStates.AddLast(state);
                 }
             }
-            foreach (var finalState in finalStates)
+            foreach(var stateSet in new[]{finalStates, nonFinalStates})
             {
-                EquivalenceLookup[finalState] = finalBranch;
+                if(stateSet.Count == 0)
+                {
+                    continue;
+                }
+                var stateSetEquivalence = new EquivalenceBranch(stateSet, this);
+                foreach (var state in stateSet)
+                {
+                    EquivalenceLookup[state] = stateSetEquivalence;
+                }
+                _branches.Add(stateSetEquivalence);
+                Equivalences.Add(stateSetEquivalence);
             }
-            foreach (var nonFinalState in nonFinalStates)
-            {
-                EquivalenceLookup[nonFinalState] = nonFinalBranch;
-            }
-            _branches.Add(finalBranch);
-            _branches.Add(nonFinalBranch);
-            Equivalences.Add(finalBranch);
-            Equivalences.Add(nonFinalBranch);
         }
 
         public void SeperateEquivalencesIntoBranches()

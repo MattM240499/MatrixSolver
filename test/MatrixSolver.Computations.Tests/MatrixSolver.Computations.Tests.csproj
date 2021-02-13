@@ -19,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../src/MatrixSolver.Computations/MatrixSolver.Computations.csproj" />
+    <ProjectReference Include="../../src/MatrixSolver.Computations/MatrixSolver.Computations.csproj" />
   </ItemGroup>
 
 </Project>

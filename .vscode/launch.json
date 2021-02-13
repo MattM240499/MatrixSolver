@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": ".NET Core Launch (console)",
+            "name": "VRP Solver",
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
@@ -15,6 +15,21 @@
                 "Test.json"
             ],
             "cwd": "${workspaceFolder}/src",
+            // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console
+            "console": "internalConsole",
+            "stopAtEntry": false
+        },
+        {
+            "name": "VRP Solution Verifier",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            // If you have changed target frameworks, make sure to update the program path.
+            "program": "${workspaceFolder}/tools/VectorReachabilitySolutionChecker/bin/Debug/netcoreapp3.1/VectorReachabilitySolutionChecker.dll",
+            "args": [
+                "XSRRSRSRRSR"
+            ],
+            "cwd": "${workspaceFolder}/tools/VectorReachabilitySolutionChecker",
             // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console
             "console": "internalConsole",
             "stopAtEntry": false

@@ -336,8 +336,33 @@ namespace MatrixSolver.Computations.DataTypes.Automata
         /// Returns a new automaton which is a minimzed version
         /// The input must be a DFA
         /// </summary>
-        public Automaton MinimizeDFA()
+        public Automaton MinimizeDFA(bool validateDfa = true)
         {
+            if(validateDfa)
+            {
+                // Validate automaton is a DFA
+                if(StartStates.Count != 1)
+                {
+                    throw new InvalidOperationException("Automaton contains multiple start states, thus is not DFA, and therefore minimization cannot be performed.");
+                }
+                foreach(var state in States)
+                {
+                    foreach(var symbol in _alphabet)
+                    {
+                        if(_transitionMatrix.GetStates(state, symbol).Count > 1)
+                        {
+                            throw new InvalidOperationException($"Automaton contains multiple transition from state {state} with symbol {symbol}, thus is not a DFA" +
+                                ", and therefore minimization cannot be performed.");
+                        }
+                    }
+                    if(_transitionMatrix.GetStates(state, Automaton.Epsilon).Count != 0)
+                    {
+                        throw new InvalidOperationException($"Automaton contains an epsilon transition from state {state}, thus is not a DFA" +
+                            ", and therefore minimization cannot be performed.");
+                    }
+                }
+            }
+            
             var equivalenceTree = new EquivalenceTree(this);
             equivalenceTree.SeperateEquivalencesIntoBranches();
             var newAutomaton = new Automaton(_alphabet);
@@ -354,7 +379,7 @@ namespace MatrixSolver.Computations.DataTypes.Automata
                 var equivalence = equivalenceBranch.States;
                 bool isStartState = equivalence.Contains(_startStates.First());
                 // Each equivalence is either only made out of goal states or not, so check this way
-                bool isFinalState = _goalStates.Contains(equivalence.First());
+                bool isFinalState = _goalStates.Contains(equivalence.First.Value);
                 newAutomatonStateLookup[equivalence] = newAutomaton.AddState(isStartState: isStartState, isGoalState: isFinalState);
             }
             // Then add all transitions
@@ -366,7 +391,7 @@ namespace MatrixSolver.Computations.DataTypes.Automata
                 }
 
                 var equivalence = equivalenceBranch.States;
-                var state = equivalence.First();
+                var state = equivalence.First!.Value;
                 var newAutomatonStateFrom = newAutomatonStateLookup[equivalence];
                 foreach (var symbol in _alphabet)
                 {

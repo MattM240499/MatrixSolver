@@ -1,5 +1,6 @@
 
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using Extreme.Mathematics;
 
@@ -10,7 +11,7 @@ namespace MatrixSolver.Computations.DataTypes
     /// </summary>
     public class ImmutableVector2D
     {
-        public ReadOnlyCollection<BigRational> UnderlyingVector { get; }
+        public IReadOnlyList<BigRational> UnderlyingVector { get; }
         public const int Order = 2;
         public ImmutableVector2D(BigRational[] values)
         {
@@ -53,6 +54,20 @@ namespace MatrixSolver.Computations.DataTypes
             returnString += "]";
 
             return returnString;
+        }
+
+        public override bool Equals(object? other)
+        {
+            if (other is ImmutableVector2D)
+            {
+                return ImmutableVector2D.Equals(this, other);
+            }
+            return false;
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(UnderlyingVector[0], UnderlyingVector[1]);
         }
 
         public bool Equals(ImmutableVector2D other)

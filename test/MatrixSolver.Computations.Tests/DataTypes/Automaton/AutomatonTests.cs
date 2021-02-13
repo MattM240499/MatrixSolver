@@ -327,6 +327,92 @@ namespace MatrixSolver.Computations.Tests.DataTypes.Automata
             Assert.True(minimizedAutomaton.IsValidWord("aaaaaaa"));
         }
 
+        [Fact]
+        public void Minimize_MinimizesCorrectly_WithOnlyStartStates()
+        {
+            var automaton = CreateEmptyAutomatonWithStates(4);
+            automaton.SetAsStartState(0);
+            for(int i = 0; i< 4; i++)
+            {
+                automaton.AddTransition(i, (2 * i + 2) % 4, 'a');
+                automaton.AddTransition(i, (5 * i+1) % 4, 'b');
+                automaton.AddTransition(i, (3* i + 1) % 4, 'c');
+            }
+            
+            var minimizedAutomaton = automaton.MinimizeDFA();
+            Assert.Equal(0, minimizedAutomaton.States.Count);
+            Assert.False(minimizedAutomaton.IsValidWord("ababcbcbbaccbabbcabcabcabcababcabcbc"));
+        }
+
+        [Fact]
+        public void Minimize_MinimizesCorrectly_WithOnlyGoalStates()
+        {
+            var automaton = CreateEmptyAutomatonWithStates(4);
+            automaton.SetAsStartState(0);
+            for(int i = 0; i< 4; i++)
+            {
+                automaton.SetAsGoalState(i);
+                // Do some random-ish states
+                automaton.AddTransition(i, (2 * i + 2) % 4, 'a');
+                automaton.AddTransition(i, (5 * i+1) % 4, 'b');
+                automaton.AddTransition(i, (3* i + 1) % 4, 'c');
+            }
+            
+            var minimizedAutomaton = automaton.MinimizeDFA();
+            Assert.Equal(1, minimizedAutomaton.States.Count);
+            Assert.Equal(1, minimizedAutomaton.GoalStates.Count);
+            Assert.True(minimizedAutomaton.IsValidWord("ababcbcbbaccbabbcabcabcabcababcabcbc"));
+        }
+
+        [Fact]
+        public void Minimize_Throws_IfNFAWithMultipleStartStates()
+        {
+            var automaton = CreateEmptyAutomatonWithStates(4);
+            automaton.SetAsStartState(0);
+            automaton.SetAsStartState(1);
+            for(int i = 0; i< 4; i++)
+            {
+                // Do some random-ish states
+                automaton.AddTransition(i, (2 * i + 2) % 4, 'a');
+                automaton.AddTransition(i, (5 * i+1) % 4, 'b');
+                automaton.AddTransition(i, (3* i + 1) % 4, 'c');
+            }
+            
+            Assert.Throws<InvalidOperationException>(() => automaton.MinimizeDFA());
+        }
+
+        [Fact]
+        public void Minimize_Throws_IfNFAWithEpsilonTransitions()
+        {
+            var automaton = CreateEmptyAutomatonWithStates(4);
+            automaton.SetAsStartState(0);
+            for(int i = 0; i< 4; i++)
+            {
+                // Do some random-ish states
+                automaton.AddTransition(i, (2 * i + 2) % 4, 'a');
+                automaton.AddTransition(i, (5 * i+1) % 4, 'b');
+                automaton.AddTransition(i, (3* i + 1) % 4, 'c');
+                automaton.AddTransition(i, (7*i + 1) % 4, Automaton.Epsilon);
+            }
+            
+            Assert.Throws<InvalidOperationException>(() => automaton.MinimizeDFA());
+        }
+
+        [Fact]
+        public void Minimize_Throws_IfNFAWithMultipleTransition()
+        {
+            var automaton = CreateEmptyAutomatonWithStates(4);
+            automaton.SetAsStartState(0);
+            for(int i = 0; i< 4; i++)
+            {
+                // Do some random-ish states
+                automaton.AddTransition(i, (i+1) % 4, 'a');
+                automaton.AddTransition(i, (i+2) % 4, 'a');
+            }
+            
+            Assert.Throws<InvalidOperationException>(() => automaton.MinimizeDFA());
+        }
+
         private Automaton CreateEmptyAutomatonWithStates(int states)
         {
             var automaton = new Automaton(_alphabet);
