@@ -7,7 +7,7 @@ namespace MatrixSolver.Computations.DataTypes
     /// <typeparam name="T"></typeparam>
     public class TwoDimensionalArray<T> : IReadOnlyTwoDimensionalArray<T>
     {
-        private readonly T[,] _underlyingArray;
+        private T[,] _underlyingArray;
         public TwoDimensionalArray(T[,] underlyingArray)
         {
             _underlyingArray = underlyingArray;
@@ -17,6 +17,11 @@ namespace MatrixSolver.Computations.DataTypes
         {
             get { return _underlyingArray[i, j]; }
             set { _underlyingArray[i, j] = value; }
+        }
+
+        public void Update(T[,] underlyingArray)
+        {
+            _underlyingArray = underlyingArray;
         }
 
         public int Length => _underlyingArray.Length;

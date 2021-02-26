@@ -90,8 +90,9 @@ namespace MatrixSolver.Computations.Maths
             return String.Join("", matrixProduct.Select(m => m.ToString()));
         }
 
-        private static LinkedList<GeneratorMatrixIdentifier> ConvertMatrixToUseTAndSGeneratorMatrices(ImmutableMatrix2x2 matrix)
+        private static LinkedList<GeneratorMatrixIdentifier> ConvertMatrixToUseTAndSGeneratorMatrices(ImmutableMatrix2x2 toConvertMatrix)
         {
+            var matrix = Matrix2x2.Copy(toConvertMatrix);
             LinkedList<GeneratorMatrixIdentifier> matrixProduct = new LinkedList<GeneratorMatrixIdentifier>();
             // Setup aliases for a and c
             Func<BigInteger> a = () => matrix.UnderlyingValues[0, 0].Numerator;
@@ -100,7 +101,7 @@ namespace MatrixSolver.Computations.Maths
             {
                 if (BigInteger.Abs(a()) < BigInteger.Abs(c()))
                 {
-                    matrix = Constants.Matrices.S * matrix;
+                    matrix.MultiplyLeft(Constants.Matrices.S);
                     matrixProduct.AddLast(GeneratorMatrixIdentifier.SInverse);
                 }
             };
@@ -112,11 +113,11 @@ namespace MatrixSolver.Computations.Maths
             {
                 var quotient = a() / c();
                 var remainder = a() - quotient * c();
-
-                var targetMatrix = Constants.Matrices.T.Pow(-quotient);
+                
+                var targetMatrix = Matrix2x2.Copy(Constants.Matrices.T).Pow(-quotient);
                 var targetMatrixIdentifier = GeneratorMatrixIdentifier.TInverse;
                 // Update the matrix
-                matrix = targetMatrix * matrix;
+                matrix.MultiplyLeft(targetMatrix);
                 // Choose either T or T^-1 depending on the matrix used
                 if (quotient > 0)
                 {
@@ -138,7 +139,7 @@ namespace MatrixSolver.Computations.Maths
             if (sign == -1)
             {
                 // We need to add a minus to the front (I.e. X)
-                matrix = Constants.Matrices.X * matrix;
+                matrix.MultiplyLeft(Constants.Matrices.X);
                 matrixProduct.AddLast(GeneratorMatrixIdentifier.X);
             }
 
