@@ -90,8 +90,9 @@ namespace MatrixSolver.Computations.Maths
             return String.Join("", matrixProduct.Select(m => m.ToString()));
         }
 
-        private static LinkedList<GeneratorMatrixIdentifier> ConvertMatrixToUseTAndSGeneratorMatrices(ImmutableMatrix2x2 matrix)
+        internal static LinkedList<GeneratorMatrixIdentifier> ConvertMatrixToUseTAndSGeneratorMatrices(ImmutableMatrix2x2 toConvertMatrix)
         {
+            var matrix = Matrix2x2.Copy(toConvertMatrix);
             LinkedList<GeneratorMatrixIdentifier> matrixProduct = new LinkedList<GeneratorMatrixIdentifier>();
             // Setup aliases for a and c
             Func<BigInteger> a = () => matrix.UnderlyingValues[0, 0].Numerator;
@@ -100,7 +101,7 @@ namespace MatrixSolver.Computations.Maths
             {
                 if (BigInteger.Abs(a()) < BigInteger.Abs(c()))
                 {
-                    matrix = Constants.Matrices.S * matrix;
+                    matrix.MultiplyLeft(Constants.Matrices.S);
                     matrixProduct.AddLast(GeneratorMatrixIdentifier.SInverse);
                 }
             };
@@ -111,12 +112,11 @@ namespace MatrixSolver.Computations.Maths
             while (c() != 0)
             {
                 var quotient = a() / c();
-                var remainder = a() - quotient * c();
+                
+                var targetMatrix = TToPower(-quotient);
+                matrix.MultiplyLeft(targetMatrix);
 
-                var targetMatrix = Constants.Matrices.T.Pow(-quotient);
                 var targetMatrixIdentifier = GeneratorMatrixIdentifier.TInverse;
-                // Update the matrix
-                matrix = targetMatrix * matrix;
                 // Choose either T or T^-1 depending on the matrix used
                 if (quotient > 0)
                 {
@@ -130,32 +130,41 @@ namespace MatrixSolver.Computations.Maths
 
                 PerformSSwitchIfNeeded();
             }
-            // The matrix should now be in the form [[+-1, m], [0, +-1]].
-            // TODO: Potential optimisation - We shouldn't need to multiply the matrix further. We should be able to calculate the result
-            // from here.
-            // Therefore it is either T^M or -T^-M = S^2*T^-M
+            // The matrix should now be in the form [[+-1, m], [0, +-1]]. This is ensured by the SL(2,Z) Group Property
+            // Therefore it is either T^m or -T^-m = X*T^-m. 
+            // We can work the form out from the values inside the matrix so we don't need to multiply down any further
             var sign = matrix.UnderlyingValues[0, 0].Numerator;
             if (sign == -1)
             {
                 // We need to add a minus to the front (I.e. X)
-                matrix = Constants.Matrices.X * matrix;
-                matrixProduct.AddLast(GeneratorMatrixIdentifier.X);
+                matrixProduct.AddFirst(GeneratorMatrixIdentifier.X);
             }
 
-            var b = matrix.UnderlyingValues[0, 1].Numerator;
-            var targetMatrix2 = GeneratorMatrixIdentifier.T;
-            if (b < 0)
+            var power = matrix.UnderlyingValues[0, 1].Numerator * sign;
+            var TOrTInverse = GeneratorMatrixIdentifier.T;
+            // If the resulting matrix has a negative power of T, use the inverse matrix instead.
+            if (power < 0)
             {
-                targetMatrix2 = GeneratorMatrixIdentifier.TInverse;
+                TOrTInverse = GeneratorMatrixIdentifier.TInverse;
             }
-            for (int i = 0; i < BigInteger.Abs(b); i++)
+            for (int i = 0; i < BigInteger.Abs(power); i++)
             {
-                matrixProduct.AddLast(targetMatrix2);
+                matrixProduct.AddLast(TOrTInverse);
             }
             return matrixProduct;
         }
 
-        public static LinkedList<GeneratorMatrixIdentifier> ReplaceTAndInverseWithStandardGenerators(this LinkedList<GeneratorMatrixIdentifier> matrixProduct)
+        private static Matrix2x2 TToPower(BigInteger power)
+        {
+            var values = new BigRational[2,2];
+            values[0,0] = 1;
+            values[0,1] = power;
+            values[1,0] = 0;
+            values[1,1] = 1;
+            return new Matrix2x2(values);
+        }
+
+        internal static LinkedList<GeneratorMatrixIdentifier> ReplaceTAndInverseWithStandardGenerators(this LinkedList<GeneratorMatrixIdentifier> matrixProduct)
         {
             var currentNode = matrixProduct.First;
             while (currentNode != null)
@@ -178,13 +187,7 @@ namespace MatrixSolver.Computations.Maths
             return matrixProduct;
         }
 
-        private static Dictionary<char, int> XEqualityLookup = new Dictionary<char, int>
-        {
-            ['R'] = 3,
-            ['S'] = 2
-        };
-
-        public static LinkedList<GeneratorMatrixIdentifier> SimplifyToCanonicalForm(this LinkedList<GeneratorMatrixIdentifier> matrixProduct)
+        internal static LinkedList<GeneratorMatrixIdentifier> SimplifyToCanonicalForm(this LinkedList<GeneratorMatrixIdentifier> matrixProduct)
         {
             // First remove all the X's. Using the fact that X = -I we can remove any instances. 
             // However, we may need to add an X for the sign at the front if an odd number of X's are removed

@@ -465,7 +465,7 @@ namespace MatrixSolver.Computations.Tests.DataTypes.Automata
             {
                 foreach (var symbol in _alphabet)
                 {
-                    // Add some randomness ish
+                    // Add some randomish looking transitions
                     var bytes = Encoding.ASCII.GetBytes(symbol.ToString());
                     var stateTo = (3 * state + (2 * bytes[0] % 7)) % 4;
                     automaton.AddTransition(state, stateTo, symbol);
