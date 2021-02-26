@@ -5,6 +5,7 @@ using System.Linq;
 using MatrixSolver.Computations.DataTypes;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Text;
 
 namespace MatrixSolver.Computations.Tests.DataTypes.Automata
 {
@@ -185,7 +186,7 @@ namespace MatrixSolver.Computations.Tests.DataTypes.Automata
             automaton.AddTransition(4, 1, 'a');
             automaton.AddTransition(4, 2, 'b');
             var minimizedAutomaton = automaton.MinimizeDFA();
-            
+
             Assert.Equal(4, minimizedAutomaton.States.Count);
         }
 
@@ -293,7 +294,7 @@ namespace MatrixSolver.Computations.Tests.DataTypes.Automata
         }
 
         [Fact]
-        public void Minimize_MinimizesCorrectly6_IncompleteAutomata()
+        public void Minimize_MinimizesCorrectly7_IncompleteAutomata()
         {
             // https://www.youtube.com/watch?v=DV8cZp-2VmM
             var automaton = CreateEmptyAutomatonWithStates(4);
@@ -332,16 +333,16 @@ namespace MatrixSolver.Computations.Tests.DataTypes.Automata
         {
             var automaton = CreateEmptyAutomatonWithStates(4);
             automaton.SetAsStartState(0);
-            for(int i = 0; i< 4; i++)
+            for (int i = 0; i < 4; i++)
             {
                 automaton.AddTransition(i, (2 * i + 2) % 4, 'a');
-                automaton.AddTransition(i, (5 * i+1) % 4, 'b');
-                automaton.AddTransition(i, (3* i + 1) % 4, 'c');
+                automaton.AddTransition(i, (5 * i + 1) % 4, 'b');
+                automaton.AddTransition(i, (3 * i + 1) % 4, 'c');
             }
-            
+
             var minimizedAutomaton = automaton.MinimizeDFA();
-            Assert.Equal(0, minimizedAutomaton.States.Count);
-            Assert.False(minimizedAutomaton.IsValidWord("ababcbcbbaccbabbcabcabcabcababcabcbc"));
+            Assert.Equal(1, minimizedAutomaton.States.Count);
+            Assert.False(minimizedAutomaton.IsValidWord("abc"));
         }
 
         [Fact]
@@ -349,15 +350,15 @@ namespace MatrixSolver.Computations.Tests.DataTypes.Automata
         {
             var automaton = CreateEmptyAutomatonWithStates(4);
             automaton.SetAsStartState(0);
-            for(int i = 0; i< 4; i++)
+            for (int i = 0; i < 4; i++)
             {
                 automaton.SetAsGoalState(i);
                 // Do some random-ish states
                 automaton.AddTransition(i, (2 * i + 2) % 4, 'a');
-                automaton.AddTransition(i, (5 * i+1) % 4, 'b');
-                automaton.AddTransition(i, (3* i + 1) % 4, 'c');
+                automaton.AddTransition(i, (5 * i + 1) % 4, 'b');
+                automaton.AddTransition(i, (3 * i + 1) % 4, 'c');
             }
-            
+
             var minimizedAutomaton = automaton.MinimizeDFA();
             Assert.Equal(1, minimizedAutomaton.States.Count);
             Assert.Equal(1, minimizedAutomaton.GoalStates.Count);
@@ -370,14 +371,14 @@ namespace MatrixSolver.Computations.Tests.DataTypes.Automata
             var automaton = CreateEmptyAutomatonWithStates(4);
             automaton.SetAsStartState(0);
             automaton.SetAsStartState(1);
-            for(int i = 0; i< 4; i++)
+            for (int i = 0; i < 4; i++)
             {
                 // Do some random-ish states
                 automaton.AddTransition(i, (2 * i + 2) % 4, 'a');
-                automaton.AddTransition(i, (5 * i+1) % 4, 'b');
-                automaton.AddTransition(i, (3* i + 1) % 4, 'c');
+                automaton.AddTransition(i, (5 * i + 1) % 4, 'b');
+                automaton.AddTransition(i, (3 * i + 1) % 4, 'c');
             }
-            
+
             Assert.Throws<InvalidOperationException>(() => automaton.MinimizeDFA());
         }
 
@@ -386,15 +387,15 @@ namespace MatrixSolver.Computations.Tests.DataTypes.Automata
         {
             var automaton = CreateEmptyAutomatonWithStates(4);
             automaton.SetAsStartState(0);
-            for(int i = 0; i< 4; i++)
+            for (int i = 0; i < 4; i++)
             {
                 // Do some random-ish states
                 automaton.AddTransition(i, (2 * i + 2) % 4, 'a');
-                automaton.AddTransition(i, (5 * i+1) % 4, 'b');
-                automaton.AddTransition(i, (3* i + 1) % 4, 'c');
-                automaton.AddTransition(i, (7*i + 1) % 4, Automaton.Epsilon);
+                automaton.AddTransition(i, (5 * i + 1) % 4, 'b');
+                automaton.AddTransition(i, (3 * i + 1) % 4, 'c');
+                automaton.AddTransition(i, (7 * i + 1) % 4, Automaton.Epsilon);
             }
-            
+
             Assert.Throws<InvalidOperationException>(() => automaton.MinimizeDFA());
         }
 
@@ -403,14 +404,75 @@ namespace MatrixSolver.Computations.Tests.DataTypes.Automata
         {
             var automaton = CreateEmptyAutomatonWithStates(4);
             automaton.SetAsStartState(0);
-            for(int i = 0; i< 4; i++)
+            for (int i = 0; i < 4; i++)
             {
                 // Do some random-ish states
-                automaton.AddTransition(i, (i+1) % 4, 'a');
-                automaton.AddTransition(i, (i+2) % 4, 'a');
+                automaton.AddTransition(i, (i + 1) % 4, 'a');
+                automaton.AddTransition(i, (i + 2) % 4, 'a');
             }
-            
+
             Assert.Throws<InvalidOperationException>(() => automaton.MinimizeDFA());
+        }
+
+        [Fact]
+        public void IsDFA_ReturnsFalse_WithNoStates()
+        {
+            var automaton = CreateEmptyAutomatonWithStates(0);
+            Assert.False(automaton.IsDFA(out var _));
+        }
+
+        [Fact]
+        public void IsDFA_ReturnsFalse_WithNoStartStates()
+        {
+            var automaton = CreateEmptyAutomatonWithStates(1);
+            Assert.False(automaton.IsDFA(out var _));
+        }
+
+        [Fact]
+        public void IsDFA_ReturnsFalse_WithTwoTransitionsWithSameSymbol()
+        {
+            var automaton = CreateEmptyAutomatonWithStates(4);
+            automaton.SetAsStartState(0);
+            automaton.AddTransition(0, 1, _alphabet[0]);
+            automaton.AddTransition(0, 2, _alphabet[0]);
+            Assert.False(automaton.IsDFA(out var _));
+        }
+
+        [Fact]
+        public void IsDFA_ReturnsFalse_WithEpsilonTransitions()
+        {
+            var automaton = CreateEmptyAutomatonWithStates(4);
+            automaton.SetAsStartState(0);
+            automaton.AddTransition(0, 1, Automaton.Epsilon);
+            Assert.False(automaton.IsDFA(out var _));
+        }
+
+        [Fact]
+        public void IsDFA_ReturnsTrue_With1StartStateAndNoTransitions()
+        {
+            var automaton = CreateEmptyAutomatonWithStates(4);
+            automaton.SetAsStartState(0);
+            automaton.AddTransition(0, 1, _alphabet[0]);
+            Assert.True(automaton.IsDFA(out var _));
+        }
+
+        [Fact]
+        public void IsDFA_ReturnsTrue_With1StartStateAnd1TransitionPerSymbolPerState()
+        {
+            var automaton = CreateEmptyAutomatonWithStates(4);
+            automaton.SetAsStartState(0);
+            foreach (var state in automaton.States)
+            {
+                foreach (var symbol in _alphabet)
+                {
+                    // Add some randomness ish
+                    var bytes = Encoding.ASCII.GetBytes(symbol.ToString());
+                    var stateTo = (3 * state + (2 * bytes[0] % 7)) % 4;
+                    automaton.AddTransition(state, stateTo, symbol);
+                }
+            }
+
+            Assert.True(automaton.IsDFA(out var _));
         }
 
         private Automaton CreateEmptyAutomatonWithStates(int states)
