@@ -23,7 +23,7 @@ namespace MatrixSolver.Computations.DataTypes.Automata
             var finalStates = new LinkedList<int>();
             var nonFinalStates = new LinkedList<int>();
             Automaton = automaton;
-            
+
             nonFinalStates.AddLast(-1);
             foreach (var state in automaton.States)
             {
@@ -36,9 +36,9 @@ namespace MatrixSolver.Computations.DataTypes.Automata
                     nonFinalStates.AddLast(state);
                 }
             }
-            foreach(var stateSet in new[]{finalStates, nonFinalStates})
+            foreach (var stateSet in new[] { nonFinalStates, finalStates })
             {
-                if(stateSet.Count == 0)
+                if (stateSet.Count == 0)
                 {
                     continue;
                 }
@@ -129,7 +129,7 @@ namespace MatrixSolver.Computations.DataTypes.Automata
                 }
                 state = nextState;
             }
-            foreach(var update in equivalenceUpdates)
+            foreach (var update in equivalenceUpdates)
             {
                 _root.EquivalenceLookup[update.state] = update.branch;
             }
@@ -150,7 +150,7 @@ namespace MatrixSolver.Computations.DataTypes.Automata
             var previousEquivalences = new List<EquivalenceBranch?>(_automaton.Alphabet.Count);
             foreach (var character in _automaton.Alphabet)
             {
-                if(state == -1)
+                if (state == -1)
                 {
                     previousEquivalences.Add(_root.EquivalenceLookup[-1]);
                     continue;

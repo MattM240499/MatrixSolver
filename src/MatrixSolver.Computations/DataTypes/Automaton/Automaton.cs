@@ -338,78 +338,90 @@ namespace MatrixSolver.Computations.DataTypes.Automata
         /// </summary>
         public Automaton MinimizeDFA(bool validateDfa = true)
         {
-            if(validateDfa)
+            if(validateDfa && !IsDFA(out string error))
             {
-                // Validate automaton is a DFA
-                if(StartStates.Count != 1)
-                {
-                    throw new InvalidOperationException("Automaton contains multiple start states, thus is not DFA, and therefore minimization cannot be performed.");
-                }
-                foreach(var state in States)
-                {
-                    foreach(var symbol in _alphabet)
-                    {
-                        if(_transitionMatrix.GetStates(state, symbol).Count > 1)
-                        {
-                            throw new InvalidOperationException($"Automaton contains multiple transition from state {state} with symbol {symbol}, thus is not a DFA" +
-                                ", and therefore minimization cannot be performed.");
-                        }
-                    }
-                    if(_transitionMatrix.GetStates(state, Automaton.Epsilon).Count != 0)
-                    {
-                        throw new InvalidOperationException($"Automaton contains an epsilon transition from state {state}, thus is not a DFA" +
-                            ", and therefore minimization cannot be performed.");
-                    }
-                }
+                throw new InvalidOperationException(error);
             }
             
+            // Perform the minimization calculation
             var equivalenceTree = new EquivalenceTree(this);
             equivalenceTree.SeperateEquivalencesIntoBranches();
+            // Create the new Automaton
             var newAutomaton = new Automaton(_alphabet);
             var newAutomatonStateLookup = new Dictionary<LinkedList<int>, int>();
-            // First create all states
-            EquivalenceBranch? emptyEquivalenceBranch = null;
-            foreach (var equivalenceBranch in equivalenceTree.Equivalences)
-            {
-                if(equivalenceBranch.States.First!.Value == -1)
-                {
-                    emptyEquivalenceBranch = equivalenceBranch;
-                    continue;
-                }
-                var equivalence = equivalenceBranch.States;
-                bool isStartState = equivalence.Contains(_startStates.First());
-                // Each equivalence is either only made out of goal states or not, so check this way
-                bool isFinalState = _goalStates.Contains(equivalence.First.Value);
-                newAutomatonStateLookup[equivalence] = newAutomaton.AddState(isStartState: isStartState, isGoalState: isFinalState);
-            }
-            // Then add all transitions
-            foreach (var equivalenceBranch in equivalenceTree.Equivalences)
-            {
-                if(equivalenceBranch == emptyEquivalenceBranch)
-                {
-                    continue;
-                }
+            var equivalenceSetQueue = new Queue<LinkedList<int>>();
+            // Add the start state to the automaton.
+            var equivalenceStateSet = equivalenceTree.EquivalenceLookup[_startStates.First()].States;
+            newAutomatonStateLookup[equivalenceStateSet] = newAutomaton.AddState(isStartState: true, isGoalState: _goalStates.Contains(equivalenceStateSet.First!.Value));
+            equivalenceSetQueue.Enqueue(equivalenceStateSet);
 
-                var equivalence = equivalenceBranch.States;
-                var state = equivalence.First!.Value;
-                var newAutomatonStateFrom = newAutomatonStateLookup[equivalence];
+            while(equivalenceSetQueue.TryDequeue(out var equivalenceSet))
+            {
+                // Pick any state in the equivalence. Each equivalence must have atleast 1 state.
+                var stateFrom = equivalenceSet.First!.Value;
+                
                 foreach (var symbol in _alphabet)
                 {
-                    var states = TransitionMatrix.GetStates(state, symbol);
+                    var states = TransitionMatrix.GetStates(stateFrom, symbol);
                     if (states.Count != 0)
                     {
                         var stateTo = states.First();
                         var stateToEquivalence = equivalenceTree.EquivalenceLookup[stateTo].States;
+                        // -1 Indicates the state where each transition goes to a dead end. Ignore transitions that lead here, because the definition of DFA used in this project
+                        // is that where a state has at most one transition.
                         if(stateToEquivalence.First!.Value == -1)
                         {
                             continue;
                         }
-                        var newAutomatonStateTo = newAutomatonStateLookup[stateToEquivalence];
-                        newAutomaton.AddTransition(newAutomatonStateFrom, newAutomatonStateTo, symbol);
+                        if(!newAutomatonStateLookup.TryGetValue(stateToEquivalence, out var newAutomatonStateTo))
+                        {
+                            // State is unknown. Add it to the automaton, and the state queue.
+                            newAutomatonStateTo = newAutomaton.AddState(isStartState: false, isGoalState: _goalStates.Contains(stateTo));
+                            var equivalenceSetTo = equivalenceTree.EquivalenceLookup[stateTo].States;
+                            equivalenceSetQueue.Enqueue(equivalenceSetTo);
+                            newAutomatonStateLookup[equivalenceSetTo] = newAutomatonStateTo;
+                        }
+                        newAutomaton.AddTransition(newAutomatonStateLookup[equivalenceSet], newAutomatonStateTo, symbol);
                     }
                 }
             }
+            
             return newAutomaton;
+        }
+
+        /// <summary>
+        /// Tests whether a given Automaton is a DFA.
+        /// </summary>
+        public bool IsDFA(out string error)
+        {
+            // Validate automaton is a DFA
+            error  = "";
+            if(StartStates.Count != 1)
+            {
+                error = $"Automaton should contain exactly 1 start state but contained {StartStates.Count}, thus is not DFA, and therefore minimization cannot be performed.";
+                return false;
+            }
+            foreach(var state in States)
+            {
+                foreach(var symbol in _alphabet)
+                {
+                    if(_transitionMatrix.GetStates(state, symbol).Count > 1)
+                    {
+                        error = $"Automaton contains multiple transition from state {state} with symbol {symbol}, thus is not a DFA" +
+                            ", and therefore minimization cannot be performed.";
+                    }
+                }
+                if(_transitionMatrix.GetStates(state, Automaton.Epsilon).Count != 0)
+                {
+                    error = $"Automaton contains an epsilon transition from state {state}, thus is not a DFA" +
+                        ", and therefore minimization cannot be performed.";
+                }
+            }
+            if(error != "")
+            {
+                return false;
+            }
+            return true;
         }
 
         /// <summary>

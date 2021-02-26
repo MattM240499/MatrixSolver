@@ -19,7 +19,7 @@ namespace MatrixSolver.Computations
             // Validate input data
             // TODO: Reorganise into subroutines to allow for unit testing.
             ValidateMatrixList(matrices);
-            BigRational scalar = GetVectorScalar(vectorX, vectorY);
+            ValidateVectors(vectorX, vectorY, out var scalar);
 
             Console.WriteLine("Input data: ");
             Console.WriteLine("-------------------------");
@@ -28,7 +28,7 @@ namespace MatrixSolver.Computations
             Console.WriteLine($"y =  {vectorY}");
             Console.WriteLine("-------------------------");
 
-            // Scale down by gcd(x1, x2) = gcd(y1, y2)
+            // Scale down by gcd(x1, x2) = gcd(y1, y2) = d
             var scaledVectorX = scalar * vectorX;
             var scaledVectorY = scalar * vectorY;
             // Calcualte A(x)^-1, A(y)
@@ -48,7 +48,7 @@ namespace MatrixSolver.Computations
             string matrixSolutionRegex = String.Format("{0}(({1})*|({2})*){3}",
                 AyAsCanonicalString, TAsCanonicalString, TInverseAsCanonicalString, AxAsCanonicalString);
             string matrixProductRegex = $"({String.Join("|", matricesAsGeneratorMatrices)})*";
-            
+
             Console.WriteLine($"Solutions of Mx = y as a regex are of the form: {matrixSolutionRegex}");
             Console.WriteLine($"Solution as a product of input matrices as a regex are of the form: {matrixProductRegex}");
 
@@ -88,7 +88,7 @@ namespace MatrixSolver.Computations
             }
         }
 
-        private static BigRational GetVectorScalar(ImmutableVector2D vectorX, ImmutableVector2D vectorY)
+        private static void ValidateVectors(ImmutableVector2D vectorX, ImmutableVector2D vectorY, out BigRational scalar)
         {
             // Validate vectors
             ValidateVectorIsInteger(vectorX);
@@ -100,7 +100,7 @@ namespace MatrixSolver.Computations
                 throw new ArgumentException($"Vector X GCD had value {xGcd} which was different to Vector Y GCD of {yGcd}. Therefore, there are no solutions in SL(2,Z)");
             }
 
-            return new BigRational(1, xGcd);
+            scalar = new BigRational(1, xGcd);
         }
 
         private static void ValidateVectorIsInteger(ImmutableVector2D vector)
