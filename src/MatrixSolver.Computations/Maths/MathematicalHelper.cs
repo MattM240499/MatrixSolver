@@ -90,7 +90,7 @@ namespace MatrixSolver.Computations.Maths
             return String.Join("", matrixProduct.Select(m => m.ToString()));
         }
 
-        private static LinkedList<GeneratorMatrixIdentifier> ConvertMatrixToUseTAndSGeneratorMatrices(ImmutableMatrix2x2 toConvertMatrix)
+        internal static LinkedList<GeneratorMatrixIdentifier> ConvertMatrixToUseTAndSGeneratorMatrices(ImmutableMatrix2x2 toConvertMatrix)
         {
             var matrix = Matrix2x2.Copy(toConvertMatrix);
             LinkedList<GeneratorMatrixIdentifier> matrixProduct = new LinkedList<GeneratorMatrixIdentifier>();
@@ -112,12 +112,11 @@ namespace MatrixSolver.Computations.Maths
             while (c() != 0)
             {
                 var quotient = a() / c();
-                var remainder = a() - quotient * c();
                 
                 var targetMatrix = TToPower(-quotient);
-                var targetMatrixIdentifier = GeneratorMatrixIdentifier.TInverse;
-                // Update the matrix
                 matrix.MultiplyLeft(targetMatrix);
+
+                var targetMatrixIdentifier = GeneratorMatrixIdentifier.TInverse;
                 // Choose either T or T^-1 depending on the matrix used
                 if (quotient > 0)
                 {
@@ -138,7 +137,7 @@ namespace MatrixSolver.Computations.Maths
             if (sign == -1)
             {
                 // We need to add a minus to the front (I.e. X)
-                matrixProduct.AddLast(GeneratorMatrixIdentifier.X);
+                matrixProduct.AddFirst(GeneratorMatrixIdentifier.X);
             }
 
             var power = matrix.UnderlyingValues[0, 1].Numerator * sign;
@@ -165,7 +164,7 @@ namespace MatrixSolver.Computations.Maths
             return new Matrix2x2(values);
         }
 
-        public static LinkedList<GeneratorMatrixIdentifier> ReplaceTAndInverseWithStandardGenerators(this LinkedList<GeneratorMatrixIdentifier> matrixProduct)
+        internal static LinkedList<GeneratorMatrixIdentifier> ReplaceTAndInverseWithStandardGenerators(this LinkedList<GeneratorMatrixIdentifier> matrixProduct)
         {
             var currentNode = matrixProduct.First;
             while (currentNode != null)
@@ -188,13 +187,7 @@ namespace MatrixSolver.Computations.Maths
             return matrixProduct;
         }
 
-        private static Dictionary<char, int> XEqualityLookup = new Dictionary<char, int>
-        {
-            ['R'] = 3,
-            ['S'] = 2
-        };
-
-        public static LinkedList<GeneratorMatrixIdentifier> SimplifyToCanonicalForm(this LinkedList<GeneratorMatrixIdentifier> matrixProduct)
+        internal static LinkedList<GeneratorMatrixIdentifier> SimplifyToCanonicalForm(this LinkedList<GeneratorMatrixIdentifier> matrixProduct)
         {
             // First remove all the X's. Using the fact that X = -I we can remove any instances. 
             // However, we may need to add an X for the sign at the front if an odd number of X's are removed

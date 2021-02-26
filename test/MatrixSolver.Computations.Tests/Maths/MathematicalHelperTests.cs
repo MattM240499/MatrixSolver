@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Extreme.Mathematics;
 using MatrixSolver.Computations.DataTypes;
 using MatrixSolver.Computations.Maths;
 using Xunit;
@@ -42,6 +43,82 @@ namespace MatrixSolver.Computations.Tests.Maths
             Assert.Equal((expectedGcd, expectedS, expectedT), values);
         }
 
+        [Fact]
+        public void ConvertMatrixToUseTAndSGeneratorMatrices_ConvertsCorrectly()
+        {
+            var matrixValues = new BigRational[2, 2] { { 437, 202 }, { 543, 251 } };
+            var matrix = new ImmutableMatrix2x2(matrixValues);
+            var expectedIdentifierList = new[]
+            {
+                GeneratorMatrixIdentifier.X,
+                GeneratorMatrixIdentifier.SInverse,
+                // -1
+                GeneratorMatrixIdentifier.TInverse,
+                // S Switch
+                GeneratorMatrixIdentifier.SInverse,
+                // 4
+                GeneratorMatrixIdentifier.T,
+                GeneratorMatrixIdentifier.T,
+                GeneratorMatrixIdentifier.T,
+                GeneratorMatrixIdentifier.T,
+                // S Switch
+                GeneratorMatrixIdentifier.SInverse,
+                // -8
+                GeneratorMatrixIdentifier.TInverse,
+                GeneratorMatrixIdentifier.TInverse,
+                GeneratorMatrixIdentifier.TInverse,
+                GeneratorMatrixIdentifier.TInverse,
+                GeneratorMatrixIdentifier.TInverse,
+                GeneratorMatrixIdentifier.TInverse,
+                GeneratorMatrixIdentifier.TInverse,
+                GeneratorMatrixIdentifier.TInverse,
+                // S Switch
+                GeneratorMatrixIdentifier.SInverse,
+                // 6
+                GeneratorMatrixIdentifier.T,
+                GeneratorMatrixIdentifier.T,
+                GeneratorMatrixIdentifier.T,
+                GeneratorMatrixIdentifier.T,
+                GeneratorMatrixIdentifier.T,
+                GeneratorMatrixIdentifier.T,
+                // S Switch
+                GeneratorMatrixIdentifier.SInverse,
+                // -2
+                GeneratorMatrixIdentifier.TInverse,
+                GeneratorMatrixIdentifier.TInverse,
+                // S Switch
+                GeneratorMatrixIdentifier.SInverse
+            };
+            var matrixIdentifierList = MathematicalHelper.ConvertMatrixToUseTAndSGeneratorMatrices(matrix);
+            Assert.Equal(expectedIdentifierList, matrixIdentifierList);
+        }
+
+        [Theory]
+        [InlineData(0, 1, GeneratorMatrixIdentifier.None, false)]
+        [InlineData(0, -1, GeneratorMatrixIdentifier.None, true)]
+        [InlineData(5, 1, GeneratorMatrixIdentifier.T, false)]
+        [InlineData(-5, 1, GeneratorMatrixIdentifier.TInverse, false)]
+        [InlineData(5, -1, GeneratorMatrixIdentifier.TInverse, true)]
+        [InlineData(-5, -1, GeneratorMatrixIdentifier.T, true)]
+        public void ConvertMatrixToUseTAndSGeneratorMatrices_ConvertsCorrectly_WithTFinish(int bValue, int cornerSign, GeneratorMatrixIdentifier expectedIdentifier, bool expectedX)
+        {
+            var matrixValues = new BigRational[2, 2] { { cornerSign, bValue }, { 0, cornerSign } };
+            var matrix = new ImmutableMatrix2x2(matrixValues);
+            var count = Math.Abs(bValue);
+            var expectedIdentifierList = new List<GeneratorMatrixIdentifier>();
+            if(expectedX)
+            {
+                expectedIdentifierList.Add(GeneratorMatrixIdentifier.X);
+            }
+            
+            for(int i = 0;i < count; i++)
+            {
+                expectedIdentifierList.Add(expectedIdentifier);
+            }
+            var matrixIdentifierList = MathematicalHelper.ConvertMatrixToUseTAndSGeneratorMatrices(matrix);
+            Assert.Equal(expectedIdentifierList, matrixIdentifierList);
+        }
+
         // We will pass in matrices in Canonical form. We expect the same form back
         [Theory]
         [InlineData("XSRRSRSR")]
@@ -52,10 +129,10 @@ namespace MatrixSolver.Computations.Tests.Maths
             // Convert the word to the actual matrix product
             var matrices = expectedWord
                 .Select(i => RegularLanguageHelper.MatrixLookup[i]);
-            
+
             // Calculate the input matrix
             var inputMatrix = Constants.Matrices.I;
-            foreach(var matrix in matrices)
+            foreach (var matrix in matrices)
             {
                 inputMatrix *= matrix;
             }
