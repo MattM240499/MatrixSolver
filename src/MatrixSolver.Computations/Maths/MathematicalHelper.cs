@@ -114,7 +114,7 @@ namespace MatrixSolver.Computations.Maths
                 var quotient = a() / c();
                 var remainder = a() - quotient * c();
                 
-                var targetMatrix = Matrix2x2.Copy(Constants.Matrices.T).Pow(-quotient);
+                var targetMatrix = TToPower(-quotient);
                 var targetMatrixIdentifier = GeneratorMatrixIdentifier.TInverse;
                 // Update the matrix
                 matrix.MultiplyLeft(targetMatrix);
@@ -131,29 +131,38 @@ namespace MatrixSolver.Computations.Maths
 
                 PerformSSwitchIfNeeded();
             }
-            // The matrix should now be in the form [[+-1, m], [0, +-1]].
-            // TODO: Potential optimisation - We shouldn't need to multiply the matrix further. We should be able to calculate the result
-            // from here.
-            // Therefore it is either T^M or -T^-M = S^2*T^-M
+            // The matrix should now be in the form [[+-1, m], [0, +-1]]. This is ensured by the SL(2,Z) Group Property
+            // Therefore it is either T^m or -T^-m = X*T^-m. 
+            // We can work the form out from the values inside the matrix so we don't need to multiply down any further
             var sign = matrix.UnderlyingValues[0, 0].Numerator;
             if (sign == -1)
             {
                 // We need to add a minus to the front (I.e. X)
-                matrix.MultiplyLeft(Constants.Matrices.X);
                 matrixProduct.AddLast(GeneratorMatrixIdentifier.X);
             }
 
-            var b = matrix.UnderlyingValues[0, 1].Numerator;
-            var targetMatrix2 = GeneratorMatrixIdentifier.T;
-            if (b < 0)
+            var power = matrix.UnderlyingValues[0, 1].Numerator * sign;
+            var TOrTInverse = GeneratorMatrixIdentifier.T;
+            // If the resulting matrix has a negative power of T, use the inverse matrix instead.
+            if (power < 0)
             {
-                targetMatrix2 = GeneratorMatrixIdentifier.TInverse;
+                TOrTInverse = GeneratorMatrixIdentifier.TInverse;
             }
-            for (int i = 0; i < BigInteger.Abs(b); i++)
+            for (int i = 0; i < BigInteger.Abs(power); i++)
             {
-                matrixProduct.AddLast(targetMatrix2);
+                matrixProduct.AddLast(TOrTInverse);
             }
             return matrixProduct;
+        }
+
+        private static Matrix2x2 TToPower(BigInteger power)
+        {
+            var values = new BigRational[2,2];
+            values[0,0] = 1;
+            values[0,1] = power;
+            values[1,0] = 0;
+            values[1,1] = 1;
+            return new Matrix2x2(values);
         }
 
         public static LinkedList<GeneratorMatrixIdentifier> ReplaceTAndInverseWithStandardGenerators(this LinkedList<GeneratorMatrixIdentifier> matrixProduct)

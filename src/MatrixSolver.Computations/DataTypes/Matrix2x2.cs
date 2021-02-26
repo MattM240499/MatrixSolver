@@ -80,34 +80,6 @@ namespace MatrixSolver.Computations.DataTypes
             return this;
         }
 
-        /// <summary>
-        /// Evaluates the matrix to a given power.
-        /// Throws if the power is negative and the determinant is zero.
-        /// </summary>
-        /// <returns>A new <see cref="Matrix2x2"/> representing the result of the computation</returns>
-        public Matrix2x2 Pow(BigInteger value)
-        {
-            if (value < 0)
-            {
-                return this.Inverse().Pow(0 - value);
-            }
-            if (value == 0)
-            {
-                return Copy(Constants.Matrices.I);
-            }
-            else if (value == 1)
-            {
-                return this;
-            }
-
-            var matrix = this;
-            for (int i = 1; i < value; i++)
-            {
-                matrix = this * matrix;
-            }
-            return matrix;
-        }
-
         public static Matrix2x2 operator +(Matrix2x2 left, IMatrix2x2 right)
         {
             return left.Add(right);
@@ -121,11 +93,6 @@ namespace MatrixSolver.Computations.DataTypes
         public static ImmutableVector2D operator *(Matrix2x2 left, ImmutableVector2D right)
         {
             return left.Multiply(right);
-        }
-
-        public static Matrix2x2 operator ^(Matrix2x2 left, BigInteger right)
-        {
-            return left.Pow(right);
         }
     }
 }
