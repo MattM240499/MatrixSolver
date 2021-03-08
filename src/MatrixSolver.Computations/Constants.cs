@@ -80,9 +80,9 @@ namespace MatrixSolver.Computations
 
         public static class RegularLanguage
         {
-            public static char X = 'X';
-            public static char S = 'S';
-            public static char R = 'R';
+            public const char X = 'X';
+            public const char S = 'S';
+            public const char R = 'R';
             public static char[] Symbols = new char[] { X, S, R };
         }
 

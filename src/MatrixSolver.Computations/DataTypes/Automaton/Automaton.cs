@@ -181,7 +181,7 @@ namespace MatrixSolver.Computations.DataTypes.Automata
             return false;
         }
 
-        public IReadOnlyCollection<int> GetStatesReachableFromStateWithSymbol(int state, char symbol, bool useEpsilonStatesFromInitial = true)
+        public IReadOnlyCollection<int> GetStatesReachableFromStateWithSymbol(int state, char symbol, bool useEpsilonStatesFromInitial = true, bool useEpsilonStatesAtEnd = true)
         {
             var states = new HashSet<int>() { state };
             // Find all epsilon states from the original state.
@@ -201,7 +201,11 @@ namespace MatrixSolver.Computations.DataTypes.Automata
                 }
             }
             // Finally add the epsilon states again.
-            AddEpsilonStates(symbolStates, symbolStates);
+            if(useEpsilonStatesAtEnd)
+            {
+                AddEpsilonStates(symbolStates, symbolStates);
+            }
+            
             return symbolStates;
         }
 

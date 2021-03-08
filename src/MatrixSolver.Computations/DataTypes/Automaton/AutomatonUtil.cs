@@ -198,7 +198,8 @@ namespace MatrixSolver.Computations.DataTypes.Automata
                 ;
         }
 
-        internal static Automaton PopulateDFAWithXAndEpsilonTransitions(this Automaton automaton)
+        [Obsolete("Old Canonicalise.")]
+        internal static Automaton PopulateDFAWithXAndEpsilonTransitionsOld(this Automaton automaton)
         {
             bool changes = true;
             while (changes)
@@ -207,17 +208,17 @@ namespace MatrixSolver.Computations.DataTypes.Automata
                 // First, Look for XX and add epsilon transition where possible
                 foreach (var state in automaton.States)
                 {
-                    var states = automaton.GetStatesReachableFromStateWithSymbol(state, Constants.RegularLanguage.X);
+                    var states = automaton.GetStatesReachableFromStateWithSymbol(state, Constants.RegularLanguage.X, false);
 
                     foreach (var xReachableState in states)
                     {
-                        var epsilonStates = automaton.GetStatesReachableFromStateWithSymbol(xReachableState, Constants.RegularLanguage.X, false);
+                        var epsilonStates = automaton.GetStatesReachableFromStateWithSymbol(xReachableState, Constants.RegularLanguage.X, false, false);
                         foreach (var epsilonState in epsilonStates)
                         {
                             // Discard epsilon transition that loop back on the same state as they add no value
                             if (state != epsilonState)
                             {
-                                if(automaton.AddTransition(state, epsilonState, Automaton.Epsilon))
+                                if (automaton.AddTransition(state, epsilonState, Automaton.Epsilon))
                                 {
                                     changes = true;
                                 }
@@ -229,10 +230,10 @@ namespace MatrixSolver.Computations.DataTypes.Automata
                 foreach (var startState in automaton.States)
                 {
                     // Now look for S * X^alpha * S states
-                    var SSreachabilityDictionary = automaton.GetStatesReachableFromStateWithSymbol(startState, Constants.RegularLanguage.S)
+                    var SSreachabilityDictionary = automaton.GetStatesReachableFromStateWithSymbol(startState, Constants.RegularLanguage.S, false)
                         .ToDictionary((s) => s, (s) => ReachabilityStatus.Even())
                         .ApplyMultipleXTransitionToReachabilityDictionary(automaton)
-                        .ApplyTransitionToReachabilityDictionary(automaton, Constants.RegularLanguage.S);
+                        .ApplyTransitionToReachabilityDictionary(automaton, Constants.RegularLanguage.S, false);
                     foreach (var (finalState, reachability) in SSreachabilityDictionary)
                     {
                         if (AddTransitionsFromReachabilityStatus(automaton, startState, finalState, reachability))
@@ -241,12 +242,12 @@ namespace MatrixSolver.Computations.DataTypes.Automata
                         }
                     }
                     // Add R * X^alpha1 * R * X^alpha2 * R
-                    var RRRreachabilityDictionary = automaton.GetStatesReachableFromStateWithSymbol(startState, Constants.RegularLanguage.R)
+                    var RRRreachabilityDictionary = automaton.GetStatesReachableFromStateWithSymbol(startState, Constants.RegularLanguage.R, false)
                         .ToDictionary((s) => s, (s) => ReachabilityStatus.Even())
                         .ApplyMultipleXTransitionToReachabilityDictionary(automaton)
-                        .ApplyTransitionToReachabilityDictionary(automaton, Constants.RegularLanguage.R)
+                        .ApplyTransitionToReachabilityDictionary(automaton, Constants.RegularLanguage.R, true)
                         .ApplyMultipleXTransitionToReachabilityDictionary(automaton)
-                        .ApplyTransitionToReachabilityDictionary(automaton, Constants.RegularLanguage.R);
+                        .ApplyTransitionToReachabilityDictionary(automaton, Constants.RegularLanguage.R, false);
                     foreach (var (finalState, reachability) in RRRreachabilityDictionary)
                     {
                         if (AddTransitionsFromReachabilityStatus(automaton, startState, finalState, reachability))
@@ -256,6 +257,49 @@ namespace MatrixSolver.Computations.DataTypes.Automata
                     }
                 }
             }
+            return automaton;
+        }
+
+        internal static Automaton PopulateDFAWithXAndEpsilonTransitions(this Automaton automaton)
+        {
+            var canonicalStateTransitionLookup = new CanonicalStateTransitionLookup(automaton);
+            var transitionQueue = new Queue<Transition>();
+            foreach (var state in automaton.States)
+            {
+                foreach (var symbol in automaton.Alphabet.Append(Automaton.Epsilon))
+                {
+                    var toStates = automaton.TransitionMatrix.GetStates(state, symbol);
+                    foreach (var toState in toStates)
+                    {
+                        var transitions = canonicalStateTransitionLookup.AddTransition(state, CanonicalStateTransitionLookup.ConvertToSymbol(symbol), toState, false);
+                        foreach (var transition in transitions)
+                        {
+                            transitionQueue.Enqueue(transition);
+                        }
+                    }
+                }
+            }
+            while (transitionQueue.TryDequeue(out var transition))
+            {
+                if(transition.StateFrom == transition.StateTo && transition.Symbol == TransitionSymbol.Epsilon)
+                {
+                    continue;
+                }
+                if(CanonicalStateTransitionLookup.TryConvertToChar(transition.Symbol, out var symbolChar))
+                {
+                    if(!automaton.AddTransition(transition.StateFrom, transition.StateTo, symbolChar!.Value))
+                    {
+                        continue;
+                    }
+                }
+                
+                var transitions = canonicalStateTransitionLookup.AddTransition(transition.StateFrom, transition.Symbol, transition.StateTo, transition.Negated);
+                foreach (var newTransition in transitions)
+                {
+                    transitionQueue.Enqueue(newTransition);
+                }
+            }
+
             return automaton;
         }
 
@@ -330,12 +374,12 @@ namespace MatrixSolver.Computations.DataTypes.Automata
 
         private static IReadOnlyDictionary<int, ReachabilityStatus> ApplyTransitionToReachabilityDictionary(
             this IReadOnlyDictionary<int, ReachabilityStatus> currentReachabilityDictionary, Automaton automaton,
-             char symbol)
+             char symbol, bool useEpsilonStatesAtEnd)
         {
             var newReachabilityDictionary = new Dictionary<int, ReachabilityStatus>();
             foreach (var (state, reachabilityStatus) in currentReachabilityDictionary)
             {
-                var newStates = automaton.GetStatesReachableFromStateWithSymbol(state, symbol, false);
+                var newStates = automaton.GetStatesReachableFromStateWithSymbol(state, symbol, false, useEpsilonStatesAtEnd);
                 foreach (var newState in newStates)
                 {
                     if (!newReachabilityDictionary.TryGetValue(newState, out var newStatereachabilityStatus))
@@ -383,6 +427,14 @@ namespace MatrixSolver.Computations.DataTypes.Automata
         public static ReachabilityStatus Even()
         {
             return new ReachabilityStatus() { EvenReachable = true };
+        }
+
+        public ReachabilityStatus Times(ReachabilityStatus status)
+        {
+            var newRs = new ReachabilityStatus();
+            newRs.EvenReachable = (status.EvenReachable && this.EvenReachable) || (status.OddReachable && this.OddReachable);
+            newRs.OddReachable = (status.EvenReachable && this.OddReachable) || (status.OddReachable && this.EvenReachable);
+            return newRs;
         }
     }
 }

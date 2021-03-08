@@ -19,7 +19,7 @@ namespace MatrixSolver.Computations
             // Validate input data
             // TODO: Reorganise into subroutines to allow for unit testing.
             ValidateMatrixList(matrices);
-            ValidateVectors(vectorX, vectorY, out var scalar);
+            ValidateVectors(vectorX, vectorY, out BigRational scalar);
 
             Console.WriteLine("Input data: ");
             Console.WriteLine("-------------------------");
@@ -123,7 +123,7 @@ namespace MatrixSolver.Computations
                 .ToDFA()
                 .UpdateAutomatonToAcceptCanonicalWords()
                 .ToDFA()
-                .MinimizeDFA(false);
+                ;
         }
     }
 }
