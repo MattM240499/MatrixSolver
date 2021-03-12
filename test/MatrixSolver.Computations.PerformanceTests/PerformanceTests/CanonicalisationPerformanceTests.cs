@@ -1,13 +1,9 @@
-
-using System;
 using System.Diagnostics;
-using MatrixSolver.Computations;
-using MatrixSolver.Computations.DataTypes.Automata;
 using MatrixSolver.Computations.DataTypes.Automata.Canonicalisation;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace MatrixSolver.Tests.PerformanceTests
+namespace MatrixSolver.Computations.PerformanceTests
 {
     public class CanonicalisationPerformanceTests
     {
