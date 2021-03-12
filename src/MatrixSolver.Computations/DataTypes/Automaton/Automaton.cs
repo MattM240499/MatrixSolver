@@ -41,6 +41,15 @@ namespace MatrixSolver.Computations.DataTypes.Automata
             _alphabet = new SortedSet<char>(alphabet);
         }
 
+        private Automaton(HashSet<int> states, HashSet<int> startStates, HashSet<int> goalStates, TransitionMatrix<char> transitionMatrix, SortedSet<char> alphabet)
+        {
+            _states = states;
+            _startStates = startStates;
+            _goalStates = goalStates;
+            _transitionMatrix = transitionMatrix;
+            _alphabet = alphabet;
+        }
+
         /// <summary>
         /// Adds an empty state to the automaton. Throws if state Id already in use
         /// </summary>
@@ -181,7 +190,7 @@ namespace MatrixSolver.Computations.DataTypes.Automata
             return false;
         }
 
-        public IReadOnlyCollection<int> GetStatesReachableFromStateWithSymbol(int state, char symbol, bool useEpsilonStatesFromInitial = true)
+        public IReadOnlyCollection<int> GetStatesReachableFromStateWithSymbol(int state, char symbol, bool useEpsilonStatesFromInitial = true, bool useEpsilonStatesAtEnd = true)
         {
             var states = new HashSet<int>() { state };
             // Find all epsilon states from the original state.
@@ -194,14 +203,18 @@ namespace MatrixSolver.Computations.DataTypes.Automata
             // Then add R transitions
             foreach (var symbolState in states)
             {
-                var reachableStates = TransitionMatrix.GetStates(state, symbol);
+                var reachableStates = TransitionMatrix.GetStates(symbolState, symbol);
                 foreach (var reachableState in reachableStates)
                 {
                     symbolStates.Add(reachableState);
                 }
             }
             // Finally add the epsilon states again.
-            AddEpsilonStates(symbolStates, symbolStates);
+            if(useEpsilonStatesAtEnd)
+            {
+                AddEpsilonStates(symbolStates, symbolStates);
+            }
+            
             return symbolStates;
         }
 
@@ -422,6 +435,12 @@ namespace MatrixSolver.Computations.DataTypes.Automata
                 return false;
             }
             return true;
+        }
+
+        public Automaton Clone()
+        {
+            return new Automaton(new HashSet<int>(_states), new HashSet<int>(_startStates), 
+                new HashSet<int>(_goalStates), _transitionMatrix.Clone(), new SortedSet<char>(_alphabet));
         }
 
         /// <summary>
