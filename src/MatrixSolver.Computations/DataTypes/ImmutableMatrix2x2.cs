@@ -14,7 +14,6 @@ namespace MatrixSolver.Computations.DataTypes
         public ImmutableMatrix2x2(BigRational[,] values)
         {
             base.ValidateValues(values);
-            // TODO: Might want to Clone the array
             UnderlyingValues = new TwoDimensionalArray<BigRational>(values);
         }
 

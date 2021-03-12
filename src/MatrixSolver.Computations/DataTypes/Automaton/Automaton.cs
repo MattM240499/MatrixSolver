@@ -285,7 +285,6 @@ namespace MatrixSolver.Computations.DataTypes.Automata
         /// <summary>
         /// Returns a new automaton which is the result of intersection with another DFA.
         /// Both Automaton must be DFA.
-        /// TODO: Add unit tests
         /// </summary>
         public Automaton IntersectionWithDFA(Automaton automaton)
         {
@@ -346,8 +345,8 @@ namespace MatrixSolver.Computations.DataTypes.Automata
         }
 
         /// <summary>
-        /// Returns a new automaton which is a minimzed version
-        /// The input must be a DFA
+        /// Returns a new automaton which is minized.
+        /// The input must be a DFA.
         /// </summary>
         public Automaton MinimizeDFA(bool validateDfa = true)
         {

@@ -18,24 +18,47 @@ namespace MatrixSolver.Computations
         public static Automaton SolveVectorReachabilityProblem(ImmutableMatrix2x2[] matrices, ImmutableVector2D vectorX, ImmutableVector2D vectorY)
         {
             // Validate input data
-            // TODO: Reorganise into subroutines to allow for unit testing.
             ValidateMatrixList(matrices);
-            ValidateVectors(vectorX, vectorY, out BigRational scalar);
+            string matrixProductRegex = GetMatrixProductCanonicalRegex(matrices);
+            return SolveGeneralisedVectorReachabilityProblem(matrixProductRegex, vectorX, vectorY);
+        }
 
-            Console.WriteLine("Input data: ");
-            Console.WriteLine("-------------------------");
-            Console.WriteLine($"M1, ..., Mn =  {String.Join(", ", matrices.Select(m => m.ToString()))}");
-            Console.WriteLine($"x =  {vectorX}");
-            Console.WriteLine($"y =  {vectorY}");
-            Console.WriteLine("-------------------------");
+        public static Automaton SolveGeneralisedVectorReachabilityProblem(string languageRegex, ImmutableVector2D vectorX, ImmutableVector2D vectorY)
+        {
+            string matrixSolutionRegex = ConstructMatrixSolutionRegex(vectorX, vectorY);
+            Console.WriteLine($"Solutions of Mx = y as a regex are of the form: {matrixSolutionRegex}");
+            Console.WriteLine($"Solution intersected with language represented by: {languageRegex}");
+
+            var matrixSolutionAsCanonicalDfa = RegularLanguageRegexToCanonicalWordAcceptingDfa(matrixSolutionRegex);
+            var languageAsCanonicalDfa = RegularLanguageRegexToCanonicalWordAcceptingDfa(languageRegex);
+
+            var intersectedDFA = Constants.Automaton.Canonical
+                .IntersectionWithDFA(matrixSolutionAsCanonicalDfa)
+                .IntersectionWithDFA(languageAsCanonicalDfa)
+                ;
+            var minimizedDfa = intersectedDFA.MinimizeDFA();
+
+            return minimizedDfa;
+        }
+
+        internal static string GetMatrixProductCanonicalRegex(ImmutableMatrix2x2[] matrices)
+        {
+            var matricesAsGeneratorMatrices = matrices.Select(m => MathematicalHelper.ConvertMatrixToCanonicalString(m));
+            var matrixProductRegex = $"({String.Join("|", matricesAsGeneratorMatrices)})*";
+            return matrixProductRegex;
+        }
+
+        internal static string ConstructMatrixSolutionRegex(ImmutableVector2D vectorX, ImmutableVector2D vectorY)
+        {
+            // Validate input data
+            ValidateVectors(vectorX, vectorY, out BigRational scalar);
 
             // Scale down by gcd(x1, x2) = gcd(y1, y2) = d
             var scaledVectorX = scalar * vectorX;
             var scaledVectorY = scalar * vectorY;
             // Calcualte A(x)^-1, A(y)
-            var Ax = CalculateMatrixA(scaledVectorX);
+            var AxInverse = CalculateMatrixA(scaledVectorX).Inverse();
             var Ay = CalculateMatrixA(scaledVectorY);
-            var AxInverse = Ax.Inverse();
 
             Console.WriteLine($"General solution is of the form: {Ay} * {Constants.Matrices.T}^t * {AxInverse}");
             // Convert each matrix we require for the final form into a canonical string
@@ -44,25 +67,9 @@ namespace MatrixSolver.Computations
             var TAsCanonicalString = String.Join("", Constants.Matrices.GeneratorMatrixIdentifierLookup[GeneratorMatrixIdentifier.T]);
             var TInverseAsCanonicalString = String.Join("", Constants.Matrices.GeneratorMatrixIdentifierLookup[GeneratorMatrixIdentifier.TInverse]);
 
-            var matricesAsGeneratorMatrices = matrices.Select(m => MathematicalHelper.ConvertMatrixToCanonicalString(m));
-
             string matrixSolutionRegex = String.Format("{0}(({1})*|({2})*){3}",
                 AyAsCanonicalString, TAsCanonicalString, TInverseAsCanonicalString, AxAsCanonicalString);
-            string matrixProductRegex = $"({String.Join("|", matricesAsGeneratorMatrices)})*";
-
-            Console.WriteLine($"Solutions of Mx = y as a regex are of the form: {matrixSolutionRegex}");
-            Console.WriteLine($"Solution as a product of input matrices as a regex are of the form: {matrixProductRegex}");
-
-            var matrixSolutionAsCanonicalDfa = RegexToCanonicalDfa(matrixSolutionRegex);
-            var matrixProductAsCanonicalDfa = RegexToCanonicalDfa(matrixProductRegex);
-
-            var intersectedDFA = Constants.Automaton.Canonical
-                .IntersectionWithDFA(matrixSolutionAsCanonicalDfa)
-                .IntersectionWithDFA(matrixProductAsCanonicalDfa)
-                ;
-            var minimizedDfa = intersectedDFA.MinimizeDFA();
-
-            return minimizedDfa;
+            return matrixSolutionRegex;
         }
 
         private static ImmutableMatrix2x2 CalculateMatrixA(ImmutableVector2D vector)
@@ -112,10 +119,7 @@ namespace MatrixSolver.Computations
             }
         }
 
-        /// <summary>
-        /// TODO: Unit tests
-        /// </summary>
-        private static Automaton RegexToCanonicalDfa(string regex)
+        internal static Automaton RegularLanguageRegexToCanonicalWordAcceptingDfa(string regex)
         {
             return AutomatonUtil
                 .RegexToAutomaton(regex, Constants.RegularLanguage.Symbols)

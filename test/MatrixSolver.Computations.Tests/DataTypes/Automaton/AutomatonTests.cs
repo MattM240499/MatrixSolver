@@ -475,6 +475,71 @@ namespace MatrixSolver.Computations.Tests.DataTypes.Automata
             Assert.True(automaton.IsDFA(out var _));
         }
 
+        [Fact]
+        public void IntersectionWithDFA_IntersectsWithAllTransitionsSet()
+        {
+            // L1 = Language contains a 'b'
+            var automaton1 = CreateEmptyAutomatonWithStates(2);
+            automaton1.AddTransition(0, 0, 'a');
+            automaton1.AddTransition(0, 1, 'b');
+            automaton1.AddTransition(1, 1, 'a');
+            automaton1.AddTransition(1, 1, 'b');
+            automaton1.SetAsStartState(0);
+            automaton1.SetAsGoalState(1);
+            // L2 = language starts with 'a'
+            var automaton2 = CreateEmptyAutomatonWithStates(3);
+            automaton2.AddTransition(0, 1, 'a');
+            automaton2.AddTransition(0, 2, 'b');
+            automaton2.AddTransition(1, 1, 'a');
+            automaton2.AddTransition(1, 1, 'b');
+            automaton2.AddTransition(2, 2, 'a');
+            automaton2.AddTransition(2, 2, 'b');
+            automaton2.SetAsStartState(0);
+            automaton2.SetAsGoalState(1);
+
+            // L3 = starts with a and contains a b
+            var intersectedAutomaton = automaton1.IntersectionWithDFA(automaton2);
+            
+            Assert.True(intersectedAutomaton.IsValidWord("ab"));
+            Assert.True(intersectedAutomaton.IsValidWord("abbbbabababa"));
+
+            Assert.False(intersectedAutomaton.IsValidWord(""));
+            Assert.False(intersectedAutomaton.IsValidWord("a"));
+            Assert.False(intersectedAutomaton.IsValidWord("bbbbbb"));
+            Assert.False(intersectedAutomaton.IsValidWord("baaab"));
+        }
+
+        [Fact]
+        public void IntersectionWithDFA_IntersectsWithNotAllTransitionsSet()
+        {
+            // L1 = Language contains a 'b'
+            var automaton1 = CreateEmptyAutomatonWithStates(2);
+            automaton1.AddTransition(0, 0, 'a');
+            automaton1.AddTransition(0, 1, 'b');
+            automaton1.AddTransition(1, 1, 'a');
+            automaton1.AddTransition(1, 1, 'b');
+            automaton1.SetAsStartState(0);
+            automaton1.SetAsGoalState(1);
+            // L2 = language starts with 'a'
+            var automaton2 = CreateEmptyAutomatonWithStates(2);
+            automaton2.AddTransition(0, 1, 'a');
+            automaton2.AddTransition(1, 1, 'a');
+            automaton2.AddTransition(1, 1, 'b');
+            automaton2.SetAsStartState(0);
+            automaton2.SetAsGoalState(1);
+
+            // L3 = starts with a and contains a b
+            var intersectedAutomaton = automaton1.IntersectionWithDFA(automaton2);
+            
+            Assert.True(intersectedAutomaton.IsValidWord("ab"));
+            Assert.True(intersectedAutomaton.IsValidWord("abbbbabababa"));
+
+            Assert.False(intersectedAutomaton.IsValidWord(""));
+            Assert.False(intersectedAutomaton.IsValidWord("a"));
+            Assert.False(intersectedAutomaton.IsValidWord("bbbbbb"));
+            Assert.False(intersectedAutomaton.IsValidWord("baaab"));
+        }
+
         private Automaton CreateEmptyAutomatonWithStates(int states)
         {
             var automaton = new Automaton(_alphabet);
