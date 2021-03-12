@@ -310,7 +310,7 @@ namespace MatrixSolver.Computations.DataTypes.Automata.Canonicalisation
                         // Add epsilon transitions for X + X
                         // TODO: Potential optimisation: 
                         // We shouldn't need to add the state to the queue here as the state should already be consistent at this point,
-                        // so we should just add the state to the automaton.
+                        // so we should just add the state to the automaton, so long as it doesn't go to itself.
                         foreach (var xChainStart in _incomingTransitionLookup[stateFrom].XEpsilonChains)
                         {
                             addTransition(xChainStart, stateTo, Automaton.Epsilon, false);

@@ -166,8 +166,10 @@ namespace MatrixSolver.Computations.DataTypes.Automata
                         operatorStack.Push(character);
                         break;
                     case ')':
-                        // TODO: Could change these into trypop for error handling.
-                        nextOperator = operatorStack.Pop();
+                        if(!operatorStack.TryPop(out nextOperator))
+                        {
+                            throw new ArgumentException("Regex supplied had inconsistent bracketing.");
+                        }
                         while (nextOperator != '(')
                         {
                             postfixQueue.Enqueue(nextOperator);

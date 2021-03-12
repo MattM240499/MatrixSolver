@@ -24,6 +24,14 @@ namespace MatrixSolver
             var vectorX = new ImmutableVector2D(data.VectorX);
             var vectorY = new ImmutableVector2D(data.VectorY);
             var matrices = data.Matrices.Select(m => new ImmutableMatrix2x2(As2DArray(m, 2, 2))).ToArray();
+
+            Console.WriteLine("Vector Reachability Problem Input data: ");
+            Console.WriteLine("-------------------------");
+            Console.WriteLine($"M1, ..., Mn =  {String.Join(", ", matrices.Select(m => m.ToString()))}");
+            Console.WriteLine($"x =  {vectorX}");
+            Console.WriteLine($"y =  {vectorY}");
+            Console.WriteLine("-------------------------");
+
             // Solve equation
             var sw = Stopwatch.StartNew();
             var automaton = MatrixEquationSolutionFinder.SolveVectorReachabilityProblem(matrices, vectorX, vectorY);
