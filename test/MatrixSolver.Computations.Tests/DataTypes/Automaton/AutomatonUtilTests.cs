@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using MatrixSolver.Computations.DataTypes.Automata;
+using MatrixSolver.Computations.DataTypes.Automata.Canonicalisation;
 using Xunit;
 
 namespace MatrixSolver.Computations.Tests.DataTypes.Automata
@@ -294,7 +295,7 @@ namespace MatrixSolver.Computations.Tests.DataTypes.Automata
             var automaton = InitialiseAutomaton(states, transitions);
             automaton.PopulateDFAWithXAndEpsilonTransitions();
 
-            AssertCorrectTransitionsAddedOnly(automaton, 
+            AssertCorrectTransitionsAddedOnly(automaton,
                 new[] { (0, 1), (1, 0) },
                 new[] { (0, 1), (1, 0) });
         }
@@ -311,7 +312,7 @@ namespace MatrixSolver.Computations.Tests.DataTypes.Automata
             var automaton = InitialiseAutomaton(states, transitions);
             automaton.PopulateDFAWithXAndEpsilonTransitions();
 
-            AssertCorrectTransitionsAddedOnly(automaton, 
+            AssertCorrectTransitionsAddedOnly(automaton,
                 new[] { (0, 1), (1, 0) },
                 new[] { (0, 1), (1, 0) });
         }
@@ -328,9 +329,9 @@ namespace MatrixSolver.Computations.Tests.DataTypes.Automata
             var automaton = InitialiseAutomaton(states, transitions);
             automaton.PopulateDFAWithXAndEpsilonTransitions();
 
-            AssertCorrectTransitionsAddedOnly(automaton, 
-                new[] { (0, 1), (1, 0)}, 
-                Array.Empty<(int,int)>());
+            AssertCorrectTransitionsAddedOnly(automaton,
+                new[] { (0, 1), (1, 0) },
+                Array.Empty<(int, int)>());
         }
 
         [Fact]
@@ -345,9 +346,9 @@ namespace MatrixSolver.Computations.Tests.DataTypes.Automata
             var automaton = InitialiseAutomaton(states, transitions);
             automaton.PopulateDFAWithXAndEpsilonTransitions();
 
-            AssertCorrectTransitionsAddedOnly(automaton, 
-                new[] { (0, 1), (1, 0)}, 
-                Array.Empty<(int,int)>());
+            AssertCorrectTransitionsAddedOnly(automaton,
+                new[] { (0, 1), (1, 0) },
+                Array.Empty<(int, int)>());
         }
 
         [Fact]
@@ -367,8 +368,8 @@ namespace MatrixSolver.Computations.Tests.DataTypes.Automata
             var automaton = InitialiseAutomaton(states, transitions);
             automaton.PopulateDFAWithXAndEpsilonTransitions();
 
-            AssertCorrectTransitionsAddedOnly(automaton, 
-                new[] { (0, 1), (1, 2), (2, 4), (4, 0) }, 
+            AssertCorrectTransitionsAddedOnly(automaton,
+                new[] { (0, 1), (1, 2), (2, 4), (4, 0) },
                 new[] { (0, 2), (0, 5), (1, 4), (2, 0), (3, 6), (4, 1) });
         }
 
@@ -389,8 +390,8 @@ namespace MatrixSolver.Computations.Tests.DataTypes.Automata
             var automaton = InitialiseAutomaton(states, transitions);
             automaton.PopulateDFAWithXAndEpsilonTransitions();
 
-            AssertCorrectTransitionsAddedOnly(automaton, 
-                new[] { (6, 5), (5, 4), (4, 2), (2, 6) }, 
+            AssertCorrectTransitionsAddedOnly(automaton,
+                new[] { (6, 5), (5, 4), (4, 2), (2, 6) },
                 new[] { (6, 4), (6, 1), (5, 2), (4, 6), (3, 0), (2, 5) });
         }
 
@@ -408,8 +409,8 @@ namespace MatrixSolver.Computations.Tests.DataTypes.Automata
             var automaton = InitialiseAutomaton(states, transitions);
             automaton.PopulateDFAWithXAndEpsilonTransitions();
 
-            AssertCorrectTransitionsAddedOnly(automaton, 
-                new[] { (2, 1) }, 
+            AssertCorrectTransitionsAddedOnly(automaton,
+                new[] { (2, 1) },
                 new[] { (0, 4), (1, 3) });
         }
 
@@ -426,9 +427,93 @@ namespace MatrixSolver.Computations.Tests.DataTypes.Automata
             var automaton = InitialiseAutomaton(states, transitions);
             automaton.PopulateDFAWithXAndEpsilonTransitions();
 
-            AssertCorrectTransitionsAddedOnly(automaton, 
-                new[] { (3, 2) }, 
+            AssertCorrectTransitionsAddedOnly(automaton,
+                new[] { (3, 2) },
                 new[] { (0, 1) });
+        }
+
+        [Fact]
+        public void PopulateDFAWithXAndEpsilonTransitions_WithXXEpsilonEpsilon_AddsOnlyOneEpsilon()
+        {
+            var states = new[] { 0, 1, 2, 3, 4, 5 };
+            var transitions = new (int, int, char)[]
+            {
+                (0, 1, Constants.RegularLanguage.X),
+                (1, 2, Constants.RegularLanguage.X),
+                (2, 3, Automaton.Epsilon),
+                (3, 4, Automaton.Epsilon),
+                (4, 5, Automaton.Epsilon),
+            };
+            var automaton = InitialiseAutomaton(states, transitions);
+            automaton.PopulateDFAWithXAndEpsilonTransitions();
+
+            AssertCorrectTransitionsAddedOnly(automaton,
+                new[] { (0, 1), (1, 2) },
+                new[] { (0, 2), (2, 3), (3, 4), (4, 5) });
+        }
+
+        [Fact]
+        public void PopulateDFAWithXAndEpsilonTransitions_WithXXEpsilonEpsilon_Reversed_AddsOnlyOneEpsilon()
+        {
+            var states = new[] { 0, 1, 2, 3, 4, 5 };
+            var transitions = new (int, int, char)[]
+            {
+                (5, 4, Constants.RegularLanguage.X),
+                (4, 3, Constants.RegularLanguage.X),
+                (3, 2, Automaton.Epsilon),
+                (2, 1, Automaton.Epsilon),
+                (1, 0, Automaton.Epsilon),
+            };
+            var automaton = InitialiseAutomaton(states, transitions);
+            automaton.PopulateDFAWithXAndEpsilonTransitions();
+
+            AssertCorrectTransitionsAddedOnly(automaton,
+                new[] { (5, 4), (4, 3) },
+                new[] { (5, 3), (3, 2), (2, 1), (1, 0) });
+        }
+
+        [Fact]
+        public void PopulateDFAWithXAndEpsilonTransitions_WithEpsilonEpsilonXEpsilonXEpsilonEpsilon_AddsOnlyOneEpsilon()
+        {
+            var states = new[] { 0, 1, 2, 3, 4, 5, 6, 7, 8 };
+            var transitions = new (int, int, char)[]
+            {
+                (0, 1, Automaton.Epsilon),
+                (1, 2, Automaton.Epsilon),
+                (2, 3, Constants.RegularLanguage.X),
+                (3, 4, Automaton.Epsilon),
+                (4, 5, Constants.RegularLanguage.X),
+                (5, 6, Automaton.Epsilon),
+                (6, 7, Automaton.Epsilon),
+            };
+            var automaton = InitialiseAutomaton(states, transitions);
+            automaton.PopulateDFAWithXAndEpsilonTransitions();
+
+            AssertCorrectTransitionsAddedOnly(automaton,
+                new[] { (2, 3), (4, 5) },
+                new[] { (0, 1), (1, 2), (3, 4), (5, 6), (6, 7), (2, 5) });
+        }
+
+        [Fact]
+        public void PopulateDFAWithXAndEpsilonTransitions_WithEpsilonEpsilonXEpsilonXEpsilonEpsilon_Reversed_AddsOnlyOneEpsilon()
+        {
+            var states = new[] { 0, 1, 2, 3, 4, 5, 6, 7, 8 };
+            var transitions = new (int, int, char)[]
+            {
+                (7, 6, Automaton.Epsilon),
+                (6, 5, Automaton.Epsilon),
+                (5, 4, Constants.RegularLanguage.X),
+                (4, 3, Automaton.Epsilon),
+                (3, 2, Constants.RegularLanguage.X),
+                (2, 1, Automaton.Epsilon),
+                (1, 0, Automaton.Epsilon),
+            };
+            var automaton = InitialiseAutomaton(states, transitions);
+            automaton.PopulateDFAWithXAndEpsilonTransitions();
+
+            AssertCorrectTransitionsAddedOnly(automaton,
+                new[] { (5, 4), (3, 2) },
+                new[] { (7, 6), (6, 5), (4, 3), (2, 1), (1, 0), (5, 2) });
         }
 
         [Fact]
@@ -443,7 +528,7 @@ namespace MatrixSolver.Computations.Tests.DataTypes.Automata
             var automaton = InitialiseAutomaton(states, transitions);
             automaton.SetAsStartState(0);
             automaton.SetAsGoalState(2);
-            AutomatonUtil.AddXSurroundedPaths(automaton);
+            automaton.AddXSurroundedPaths();
 
             Assert.Equal(7, automaton.States.Count);
             Assert.True(automaton.IsValidWord("RS"));
@@ -470,7 +555,7 @@ namespace MatrixSolver.Computations.Tests.DataTypes.Automata
             var automaton = InitialiseAutomaton(states, transitions);
             automaton.SetAsStartState(0);
             automaton.SetAsGoalState(1);
-            AutomatonUtil.AddXSurroundedPaths(automaton);
+            automaton.AddXSurroundedPaths();
 
             Assert.Equal(8, automaton.States.Count);
             Assert.True(automaton.IsValidWord("R"));
@@ -491,7 +576,7 @@ namespace MatrixSolver.Computations.Tests.DataTypes.Automata
             Assert.False(automaton.IsValidWord("SXR"));
             Assert.False(automaton.IsValidWord("XSXRX"));
         }
-        
+
 
         private Automaton InitialiseAutomaton(int[] states, (int fromState, int toState, char symbol)[] transitions)
         {
@@ -510,30 +595,30 @@ namespace MatrixSolver.Computations.Tests.DataTypes.Automata
         private void AssertCorrectTransitionsAddedOnly(Automaton automaton, (int fromState, int toState)[] expectedXTransitions,
             (int fromState, int toState)[] expectedEpsilonTransitions)
         {
-            
+
             // Assert expected transitions are in place
             var missingXTransitions = new List<(int fromState, int toState)>();
             var missingEpsilonTransitions = new List<(int fromState, int toState)>();
             foreach (var transition in expectedXTransitions)
             {
                 var xStates = automaton.TransitionMatrix.GetStates(transition.fromState, Constants.RegularLanguage.X);
-                
-                if(!xStates.Contains(transition.toState))
+
+                if (!xStates.Contains(transition.toState))
                 {
                     missingXTransitions.Add(transition);
                 }
             }
-            Assert.True(missingXTransitions.Count() == 0 , 
+            Assert.True(missingXTransitions.Count() == 0,
                 $"Missing X transitions: {String.Join(", ", missingXTransitions)}");
             foreach (var transition in expectedEpsilonTransitions)
             {
                 var epsilonStates = automaton.TransitionMatrix.GetStates(transition.fromState, Automaton.Epsilon);
-                if(!epsilonStates.Contains(transition.toState))
+                if (!epsilonStates.Contains(transition.toState))
                 {
                     missingEpsilonTransitions.Add(transition);
                 }
             }
-            Assert.True(missingEpsilonTransitions.Count() == 0 , 
+            Assert.True(missingEpsilonTransitions.Count() == 0,
                 $"Missing Epsilon transitions: {String.Join(", ", missingEpsilonTransitions)}");
             // Assert remaining possible transitions are not in place.
 
@@ -544,23 +629,23 @@ namespace MatrixSolver.Computations.Tests.DataTypes.Automata
                 var xStates = automaton.TransitionMatrix.GetStates(fromState, Constants.RegularLanguage.X);
                 // Ignore transitions in the ignored list
                 var unexpectedXStates = xStates.Where(s => !expectedXTransitions.Contains((fromState, s)));
-                foreach(var s in unexpectedXStates)
+                foreach (var s in unexpectedXStates)
                 {
                     unexpectedXTransitions.Add((fromState, s));
                 }
-                
+
 
                 var epsilonStates = automaton.TransitionMatrix.GetStates(fromState, Automaton.Epsilon);
                 var unexpectedEpsilonStates = epsilonStates.Where(s => !expectedEpsilonTransitions.Contains((fromState, s)));
-                foreach(var s in unexpectedEpsilonStates)
+                foreach (var s in unexpectedEpsilonStates)
                 {
                     unexpectedEpsilonTransitions.Add((fromState, s));
                 }
-                
+
             }
             Assert.True(unexpectedXTransitions.Count() == 0,
                 $"Found unexpected X transitions: {String.Join(", ", unexpectedXTransitions)}");
-            Assert.True(unexpectedEpsilonTransitions.Count() == 0, 
+            Assert.True(unexpectedEpsilonTransitions.Count() == 0,
                 $"Found unexpected Epsilon transitions: {String.Join(", ", unexpectedEpsilonTransitions)}");
         }
     }

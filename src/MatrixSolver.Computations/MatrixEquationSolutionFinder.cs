@@ -3,6 +3,7 @@ using System.Linq;
 using Extreme.Mathematics;
 using MatrixSolver.Computations.DataTypes;
 using MatrixSolver.Computations.DataTypes.Automata;
+using MatrixSolver.Computations.DataTypes.Automata.Canonicalisation;
 using MatrixSolver.Computations.Maths;
 using MatrixSolver.Computations.Maths.Extensions;
 

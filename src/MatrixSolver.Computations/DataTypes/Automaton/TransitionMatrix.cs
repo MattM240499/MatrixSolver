@@ -13,6 +13,11 @@ namespace MatrixSolver.Computations.DataTypes.Automata
             _transitionMatrix = new Dictionary<int, Dictionary<T, SortedSet<int>>>();
         }
 
+        private TransitionMatrix(Dictionary<int, Dictionary<T, SortedSet<int>>> transitionMatrix)
+        {
+            _transitionMatrix = transitionMatrix;
+        }
+
         /// <summary>
         /// Adds a transition between two states for a given <paramref name="symbol" />
         /// </summary>
@@ -80,6 +85,21 @@ namespace MatrixSolver.Computations.DataTypes.Automata
                 }
             }
             return Array.Empty<int>();
+        }
+
+        public TransitionMatrix<T> Clone()
+        {
+            var newTransitionMatrix = new Dictionary<int, Dictionary<T, SortedSet<int>>>();
+            foreach(var kvp in _transitionMatrix)
+            {
+                var newDict = new Dictionary<T, SortedSet<int>>();
+                newTransitionMatrix[kvp.Key] = newDict;
+                foreach(var transitionKvp in kvp.Value)
+                {
+                    newDict.Add(transitionKvp.Key, new SortedSet<int>(transitionKvp.Value));
+                }
+            }
+            return new TransitionMatrix<T>(newTransitionMatrix);
         }
     }
 }
