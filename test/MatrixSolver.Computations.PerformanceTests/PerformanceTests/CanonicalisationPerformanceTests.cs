@@ -18,7 +18,7 @@ namespace MatrixSolver.Computations.PerformanceTests
         [Fact(Skip="Performance test")]
         public void PopulateDFAWithXAndEpsilonTransitions_PerformanceTests()
         {
-            var automaton = PerformanceTestingUtility.CreateLargeAutomataWithRandomTransitions(Constants.RegularLanguage.Symbols, 1000);
+            var automaton = PerformanceTestingUtility.CreateLargeAutomataWithRandomTransitions(Constants.RegularLanguage.Symbols, 150);
             var automaton2 = automaton.Clone();
 
             var sw = Stopwatch.StartNew();

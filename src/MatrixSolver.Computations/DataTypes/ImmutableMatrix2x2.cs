@@ -18,14 +18,6 @@ namespace MatrixSolver.Computations.DataTypes
         }
 
         /// <summary>
-        /// Returns a new <see cref="ImmutableMatrix2x2" /> which is the sum of this and another <see cref="ImmutableMatrix2x2" />
-        /// </summary>
-        public ImmutableMatrix2x2 Add(IMatrix2x2 right)
-        {
-            return new ImmutableMatrix2x2(base.AddBase(right));
-        }
-
-        /// <summary>
         /// Returns a new <see cref="ImmutableMatrix2x2" /> which is the product of this and another <see cref="ImmutableMatrix2x2" />
         /// </summary>
         public ImmutableMatrix2x2 Multiply(IMatrix2x2 right)
@@ -50,11 +42,6 @@ namespace MatrixSolver.Computations.DataTypes
         public ImmutableMatrix2x2 Inverse()
         {
             return new ImmutableMatrix2x2(base.InverseBase());
-        }
-
-        public static ImmutableMatrix2x2 operator +(ImmutableMatrix2x2 left, IMatrix2x2 right)
-        {
-            return left.Add(right);
         }
 
         public static ImmutableMatrix2x2 operator *(ImmutableMatrix2x2 left, IMatrix2x2 right)

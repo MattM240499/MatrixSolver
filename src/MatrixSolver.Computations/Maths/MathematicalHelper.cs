@@ -16,19 +16,13 @@ namespace MatrixSolver.Computations.Maths
         {
             a = BigInteger.Abs(a);
             b = BigInteger.Abs(b);
-            while (a != 0 && b != 0)
+            while (b != 0)
             {
-                if (a > b)
-                {
-                    a %= b;
-                }
-                else
-                {
-                    b %= a;
-                }
+                var t = b;
+                b = a % b;
+                a = t;
             }
-
-            return a | b;
+            return a;
         }
 
         /// <summary>
@@ -37,47 +31,35 @@ namespace MatrixSolver.Computations.Maths
         /// </summary>
         public static (BigInteger gcd, BigInteger s, BigInteger t) ExtendedEuclideanAlgorithm(BigInteger a, BigInteger b)
         {
-            if (a < b)
+            BigInteger old_r = a; BigInteger r = b;
+            BigInteger old_s = 1; BigInteger s = 0;
+            BigInteger old_t = 0; BigInteger t = 1;
+            while (r != 0)
             {
-                // Flip the output or the values of s,t will be the wrong way round
-                var values = ExtendedEuclideanAlgorithm(b, a);
-                return (values.gcd, values.t, values.s);
-            }
+                BigInteger quotient = old_r / r;
 
-            List<BigInteger> s = new List<BigInteger> { 1, 0 };
-            List<BigInteger> t = new List<BigInteger> { 0, 1 };
-            while (b != 0)
-            {
-                BigInteger q = a / b;
-
-                // Update r
-                var remainder = a - q * b;
-                a = b;
-                b = remainder;
-
-                // Update s
-                s.Add(s[0] - (q * s[1]));
-                s.RemoveAt(0);
-                // Update t
-                t.Add(t[0] - (q * t[1]));
-                t.RemoveAt(0);
+                (old_r, r) = (r, old_r - (quotient * r));
+                (old_s, s) = (s, old_s - (quotient * s));
+                (old_t, t) = (t, old_t - (quotient * t));
             }
 
             // If GCD found is negative, flip the resulting number. GCD should always be positive
-            if (a < 0)
+            if (old_r < 0)
             {
-                a = -a;
-                s[0] = -s[0];
-                t[0] = -t[0];
+                old_s = -old_s;
+                old_t = -old_t;
+                old_r = -old_r;
             }
 
-            return (a, s[0], t[0]);
+            return (old_r, old_s, old_t);
         }
 
         /// <summary>
-        /// Converts a matrix in SL(2,Z) to a form using only generator matrices. Returns a list of matrices made up of only S and R that when mutliplied in order 
+        /// Converts a matrix in SL(2,Z) to a form using only generator matrices. 
+        /// Returns a list of matrices made up of only S and R that when mutliplied in order 
         /// are equivelent to the original matrix.
-        /// Based on the algorithm described here: https://kconrad.math.uconn.edu/blurbs/grouptheory/SL(2,Z).pdf
+        /// Based on the algorithm described here: 
+        /// https://kconrad.math.uconn.edu/blurbs/grouptheory/SL(2,Z).pdf
         /// </summary>
         public static string ConvertMatrixToCanonicalString(ImmutableMatrix2x2 matrix)
         {
@@ -112,7 +94,7 @@ namespace MatrixSolver.Computations.Maths
             while (c() != 0)
             {
                 var quotient = a() / c();
-                
+
                 var targetMatrix = TToPower(-quotient);
                 matrix.MultiplyLeft(targetMatrix);
 
@@ -132,8 +114,7 @@ namespace MatrixSolver.Computations.Maths
             }
             // The matrix should now be in the form [[+-1, m], [0, +-1]]. This is ensured by the SL(2,Z) Group Property
             // Therefore it is either T^m or -T^-m = X*T^-m. 
-            // We can work the form out from the values inside the matrix so we don't need to multiply down any further
-            var sign = matrix.UnderlyingValues[0, 0].Numerator;
+            var sign = a();
             if (sign == -1)
             {
                 // We need to add a minus to the front (I.e. X)
@@ -156,11 +137,11 @@ namespace MatrixSolver.Computations.Maths
 
         private static Matrix2x2 TToPower(BigInteger power)
         {
-            var values = new BigRational[2,2];
-            values[0,0] = 1;
-            values[0,1] = power;
-            values[1,0] = 0;
-            values[1,1] = 1;
+            var values = new BigRational[2, 2];
+            values[0, 0] = 1;
+            values[0, 1] = power;
+            values[1, 0] = 0;
+            values[1, 1] = 1;
             return new Matrix2x2(values);
         }
 
@@ -208,10 +189,9 @@ namespace MatrixSolver.Computations.Maths
             var consecutiveCharacter = GeneratorMatrixIdentifier.None;
             int consecutiveCharacterCount = 0;
             currentNode = matrixProduct.First;
-            // Go backwards, 
+
             while (currentNode != null)
             {
-                bool remove = false;
                 var element = currentNode.Value;
                 if (element != consecutiveCharacter)
                 {
@@ -223,25 +203,7 @@ namespace MatrixSolver.Computations.Maths
                     consecutiveCharacterCount += 1;
                 }
 
-                switch (element)
-                {
-                    case GeneratorMatrixIdentifier.R:
-                        if (consecutiveCharacterCount == 3)
-                        {
-                            remove = true;
-                        }
-                        break;
-                    case GeneratorMatrixIdentifier.S:
-                        if (consecutiveCharacterCount == 2)
-                        {
-                            remove = true;
-                        }
-                        break;
-                    default:
-                        throw new InvalidOperationException($"Unexpected element {element}");
-                }
-
-                if (remove)
+                if ((element == GeneratorMatrixIdentifier.R && consecutiveCharacterCount == 3) || (element == GeneratorMatrixIdentifier.S && consecutiveCharacterCount == 2))
                 {
                     // Remove all the consecutive characters
                     for (int j = 0; j < consecutiveCharacterCount; j++)
@@ -250,41 +212,30 @@ namespace MatrixSolver.Computations.Maths
                         matrixProduct.Remove(currentNode);
                         currentNode = previous;
                     }
-                    // If we removed elements up to the first element, the currentNode will be null here.
-                    // Therefore, we can simply use the element at the start of the sequence
-                    if(currentNode == null)
+                    // 4 is the magic number of steps we want to go back for S^2 and R^3, as this takes us to the 
+                    // next potential starting element of a consecutive sequence.
+                    var remainingMoves = 4 - consecutiveCharacterCount;
+                    if(currentNode != null)
                     {
-                        currentNode = matrixProduct.First;
+                        for(int j = 0; j < remainingMoves; j++)
+                        {
+                            currentNode = currentNode.Previous;
+                            if (currentNode == null)
+                            {
+                                currentNode = matrixProduct.First;
+                                break;
+                            }
+                        }
                     }
                     else
                     {
-                        // Reset the count
-                        switch(consecutiveCharacter)
-                        {
-                            case GeneratorMatrixIdentifier.R:
-                                // Preceeding R must have been a single S, or there would have been cancellations previously
-                                consecutiveCharacter = GeneratorMatrixIdentifier.S;
-                                consecutiveCharacterCount = 1;
-                                break;
-                            case GeneratorMatrixIdentifier.S:
-                                // We know, that preceeding S must have been an R, but it could have been preceeded by an R or an S (SR, RR),
-                                // So we must check from that character onwards. 
-                                consecutiveCharacter = GeneratorMatrixIdentifier.None;
-                                consecutiveCharacterCount = 0;
-                                // If we are at the end of the string once again.
-                                if(currentNode.Previous != null)
-                                {
-                                    currentNode = currentNode.Previous;
-                                }
-                                break;
-                            default:
-                                throw new InvalidOperationException($"Unexpected element {element}");
-                        }
+                        currentNode = matrixProduct.First;
                     }
-                    
+                    consecutiveCharacter = GeneratorMatrixIdentifier.None;
+                    consecutiveCharacterCount = 0;
+
                     // These consecutive characters are cancelled because they are = X = -I, so removal changes the sign of the final expression
                     negative = !negative;
-                    consecutiveCharacterCount = 0;
                 }
                 else
                 {

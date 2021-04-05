@@ -34,15 +34,6 @@ namespace MatrixSolver.Computations.DataTypes
         }
 
         /// <summary>
-        /// Returns a new <see cref="Matrix2x2" /> which is the sum of this and another <see cref="Matrix2x2" />
-        /// </summary>
-        public Matrix2x2 Add(IMatrix2x2 right)
-        {
-            _underlyingValues.Update(base.AddBase(right));
-            return this;
-        }
-
-        /// <summary>
         /// Returns a new <see cref="Matrix2x2" /> which is the product of this and another <see cref="Matrix2x2" /> to the left.
         /// </summary>
         public Matrix2x2 MultiplyLeft(IMatrix2x2 left)
@@ -78,11 +69,6 @@ namespace MatrixSolver.Computations.DataTypes
         {
             _underlyingValues.Update(base.InverseBase());
             return this;
-        }
-
-        public static Matrix2x2 operator +(Matrix2x2 left, IMatrix2x2 right)
-        {
-            return left.Add(right);
         }
 
         public static Matrix2x2 operator *(Matrix2x2 left, IMatrix2x2 right)

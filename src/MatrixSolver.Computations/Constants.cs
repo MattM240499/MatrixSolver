@@ -71,9 +71,24 @@ namespace MatrixSolver.Computations
 
                 GeneratorMatrixIdentifierLookup = new Dictionary<GeneratorMatrixIdentifier, GeneratorMatrixIdentifier[]>
                 {
-                    [GeneratorMatrixIdentifier.T] = new GeneratorMatrixIdentifier[] { GeneratorMatrixIdentifier.X, GeneratorMatrixIdentifier.S, GeneratorMatrixIdentifier.R },
-                    [GeneratorMatrixIdentifier.TInverse] = new GeneratorMatrixIdentifier[] { GeneratorMatrixIdentifier.X, GeneratorMatrixIdentifier.R, GeneratorMatrixIdentifier.R, GeneratorMatrixIdentifier.S },
-                    [GeneratorMatrixIdentifier.SInverse] = new GeneratorMatrixIdentifier[] { GeneratorMatrixIdentifier.X, GeneratorMatrixIdentifier.S }
+                    [GeneratorMatrixIdentifier.T] = new GeneratorMatrixIdentifier[] 
+                        { 
+                            GeneratorMatrixIdentifier.X, 
+                            GeneratorMatrixIdentifier.S, 
+                            GeneratorMatrixIdentifier.R 
+                        },
+                    [GeneratorMatrixIdentifier.TInverse] = new GeneratorMatrixIdentifier[] 
+                        {
+                            GeneratorMatrixIdentifier.X, 
+                            GeneratorMatrixIdentifier.R, 
+                            GeneratorMatrixIdentifier.R, 
+                            GeneratorMatrixIdentifier.S 
+                        },
+                    [GeneratorMatrixIdentifier.SInverse] = new GeneratorMatrixIdentifier[]
+                        { 
+                            GeneratorMatrixIdentifier.X, 
+                            GeneratorMatrixIdentifier.S
+                        }
                 };
             }
         }

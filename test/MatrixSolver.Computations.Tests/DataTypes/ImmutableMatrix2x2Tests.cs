@@ -53,38 +53,6 @@ namespace MatrixSolver.Computations.Tests.DataTypes
         }
 
         [Fact]
-        public void Add_AddsTwoMatricesTogether()
-        {
-            var values1 = new BigRational[2, 2]
-            {
-                {3, 4},
-                {5, 6}
-            };
-            var values2 = new BigRational[2, 2]
-            {
-                {6, 1},
-                {7, -2}
-            };
-
-            var matrix1 = new ImmutableMatrix2x2(values1);
-            var matrix2 = new ImmutableMatrix2x2(values2);
-
-            var resultingMatrix = matrix1.Add(matrix2);
-            var resultingMatrixReversed = matrix2.Add(matrix1);
-            var resultingMatrixOperator = matrix1 + matrix2;
-            var resultingMatrixReversedOperator = matrix2 + matrix1;
-            // Verify the order is irrelevant and the operator or the method can be used for the same result
-            Assert.Equal(resultingMatrix, resultingMatrixReversed);
-            Assert.Equal(resultingMatrixOperator, resultingMatrixReversedOperator);
-            Assert.Equal(resultingMatrix, resultingMatrixOperator);
-            // Verify the calculation is correct.
-            Assert.Equal(9, resultingMatrix.UnderlyingValues[0, 0]);
-            Assert.Equal(5, resultingMatrix.UnderlyingValues[0, 1]);
-            Assert.Equal(12, resultingMatrix.UnderlyingValues[1, 0]);
-            Assert.Equal(4, resultingMatrix.UnderlyingValues[1, 1]);
-        }
-
-        [Fact]
         public void Multiply_MultipliesTwoMatricesTogether()
         {
             var values1 = new BigRational[2, 2]
