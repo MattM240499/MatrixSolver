@@ -527,7 +527,7 @@ namespace MatrixSolver.Computations.Tests.DataTypes.Automata
             };
             var automaton = InitialiseAutomaton(states, transitions);
             automaton.SetAsStartState(0);
-            automaton.SetAsGoalState(2);
+            automaton.SetAsFinalState(2);
             automaton.AddXSurroundedPaths();
 
             Assert.Equal(7, automaton.States.Count);
@@ -554,7 +554,7 @@ namespace MatrixSolver.Computations.Tests.DataTypes.Automata
             };
             var automaton = InitialiseAutomaton(states, transitions);
             automaton.SetAsStartState(0);
-            automaton.SetAsGoalState(1);
+            automaton.SetAsFinalState(1);
             automaton.AddXSurroundedPaths();
 
             Assert.Equal(8, automaton.States.Count);

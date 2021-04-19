@@ -15,7 +15,7 @@ namespace MatrixSolver.Computations.PerformanceTests
                 automaton.AddState();
             }
             automaton.SetAsStartState(0);
-            automaton.SetAsGoalState(states - 1);
+            automaton.SetAsFinalState(states - 1);
             for (int i = 0; i < states; i++)
             {
                 foreach (var symbol in alphabet)

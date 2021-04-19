@@ -130,7 +130,7 @@ namespace MatrixSolver.Computations
                 for(int i = 0; i <5; i++)
                 {
                     var state = Canonical.AddState();
-                    Canonical.SetAsGoalState(state);
+                    Canonical.SetAsFinalState(state);
                     stateIdLookup[i] = state;
                 }
                 Canonical.SetAsStartState(stateIdLookup[0]);

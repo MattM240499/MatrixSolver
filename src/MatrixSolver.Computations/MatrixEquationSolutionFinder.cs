@@ -19,13 +19,13 @@ namespace MatrixSolver.Computations
         {
             // Validate input data
             ValidateMatrixList(matrices);
-            string matrixProductRegex = GetMatrixProductCanonicalRegex(matrices);
+            string matrixProductRegex = GetMatrixSemigroupRegex(matrices);
             return SolveGeneralisedVectorReachabilityProblem(matrixProductRegex, vectorX, vectorY);
         }
 
         public static Automaton SolveGeneralisedVectorReachabilityProblem(string languageRegex, ImmutableVector2D vectorX, ImmutableVector2D vectorY)
         {
-            string matrixSolutionRegex = ConstructMatrixSolutionRegex(vectorX, vectorY);
+            string matrixSolutionRegex = GetVectorReachabilityProblemRegex(vectorX, vectorY);
             Console.WriteLine($"Solutions of Mx = y as a regex are of the form: {matrixSolutionRegex}");
             Console.WriteLine($"Solution intersected with language represented by: {languageRegex}");
 
@@ -41,17 +41,17 @@ namespace MatrixSolver.Computations
             return minimizedDfa;
         }
 
-        internal static string GetMatrixProductCanonicalRegex(ImmutableMatrix2x2[] matrices)
+        internal static string GetMatrixSemigroupRegex(ImmutableMatrix2x2[] matrices)
         {
             var matricesAsGeneratorMatrices = matrices.Select(m => MathematicalHelper.ConvertMatrixToCanonicalString(m));
-            var matrixProductRegex = $"({String.Join("|", matricesAsGeneratorMatrices)})*";
+            var matrixProductRegex = String.Format("({0})*", String.Join("|", matricesAsGeneratorMatrices));
             return matrixProductRegex;
         }
 
-        internal static string ConstructMatrixSolutionRegex(ImmutableVector2D vectorX, ImmutableVector2D vectorY)
+        internal static string GetVectorReachabilityProblemRegex(ImmutableVector2D vectorX, ImmutableVector2D vectorY)
         {
             // Validate input data
-            ValidateVectors(vectorX, vectorY, out BigRational scalar);
+            ValidateVRPVectors(vectorX, vectorY, out BigRational scalar);
 
             // Scale down by gcd(x1, x2) = gcd(y1, y2) = d
             var scaledVectorX = scalar * vectorX;
@@ -60,7 +60,6 @@ namespace MatrixSolver.Computations
             var AxInverse = CalculateMatrixA(scaledVectorX).Inverse();
             var Ay = CalculateMatrixA(scaledVectorY);
 
-            Console.WriteLine($"General solution is of the form: {Ay} * {Constants.Matrices.T}^t * {AxInverse}");
             // Convert each matrix we require for the final form into a canonical string
             var AyAsCanonicalString = MathematicalHelper.ConvertMatrixToCanonicalString(Ay);
             var AxAsCanonicalString = MathematicalHelper.ConvertMatrixToCanonicalString(AxInverse);
@@ -72,6 +71,7 @@ namespace MatrixSolver.Computations
             return matrixSolutionRegex;
         }
 
+            // Console.WriteLine($"General solution is of the form: {Ay} * {Constants.Matrices.T}^t * {AxInverse}");
         private static ImmutableMatrix2x2 CalculateMatrixA(ImmutableVector2D vector)
         {
             var euclideanAlgorithmValues = MathematicalHelper.ExtendedEuclideanAlgorithm(vector.UnderlyingVector[0].Numerator, vector.UnderlyingVector[1].Numerator);
@@ -96,7 +96,7 @@ namespace MatrixSolver.Computations
             }
         }
 
-        private static void ValidateVectors(ImmutableVector2D vectorX, ImmutableVector2D vectorY, out BigRational scalar)
+        private static void ValidateVRPVectors(ImmutableVector2D vectorX, ImmutableVector2D vectorY, out BigRational scalar)
         {
             // Validate vectors
             ValidateVectorIsInteger(vectorX);

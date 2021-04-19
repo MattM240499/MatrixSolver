@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Extreme.Mathematics;
+using MatrixSolver;
 using MatrixSolver.Computations;
 using MatrixSolver.Computations.DataTypes;
 using Newtonsoft.Json;

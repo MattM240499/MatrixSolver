@@ -39,6 +39,9 @@ namespace MatrixSolver.Computations.DataTypes.Automata
 
         /// <summary>
         /// Removes a given state, and any outgoing and incoming transitions to it.
+        /// You can provide an addition argument to skip incoming transitions as this is an expensive
+        /// operation. However, using this incorrectly can result in an invalid
+        /// transition matrix.
         /// </summary>
         public void RemoveState(int state, bool skipIncomingTransitions = false)
         {
@@ -54,22 +57,6 @@ namespace MatrixSolver.Computations.DataTypes.Automata
                     set.Remove(state);
                 }
             }
-        }
-
-        /// <summary>
-        /// Removes a transition between two states for a given <paramref name="symbol" />
-        /// </summary>
-        public bool RemoveTransition(int fromState, int toState, T symbol)
-        {
-            if (!_transitionMatrix.TryGetValue(fromState, out var transitionDict))
-            {
-                return false;
-            }
-            if (!transitionDict.TryGetValue(symbol, out var stateList))
-            {
-                return false;
-            }
-            return stateList.Remove(toState);
         }
 
         /// <summary>

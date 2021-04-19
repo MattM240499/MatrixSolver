@@ -14,8 +14,8 @@ namespace MatrixSolver.Computations.DataTypes.Automata
         private static readonly CurrentStateListComparer _currentStateListComparer = new CurrentStateListComparer();
         /// <summary>A list of start states for this automaton</summary>
         private readonly HashSet<int> _startStates;
-        /// <summary>A list of goal states for this automaton</summary>
-        private readonly HashSet<int> _goalStates;
+        /// <summary>A list of final states for this automaton</summary>
+        private readonly HashSet<int> _finalStates;
         /// <summary>A list of all states for this automaton</summary>
         private readonly HashSet<int> _states;
         /// <summary>An adjacency matrix of transition states</summary>
@@ -28,7 +28,7 @@ namespace MatrixSolver.Computations.DataTypes.Automata
         public IReadOnlyTransitionMatrix<char> TransitionMatrix => _transitionMatrix;
         public IReadOnlyCollection<int> States => _states;
         public IReadOnlyCollection<int> StartStates => _startStates;
-        public IReadOnlyCollection<int> GoalStates => _goalStates;
+        public IReadOnlyCollection<int> FinalStates => _finalStates;
         public IReadOnlyCollection<char> Alphabet => _alphabet;
         public const char Epsilon = 'Ɛ';
 
@@ -36,16 +36,16 @@ namespace MatrixSolver.Computations.DataTypes.Automata
         {
             _states = new HashSet<int>();
             _startStates = new HashSet<int>();
-            _goalStates = new HashSet<int>();
+            _finalStates = new HashSet<int>();
             _transitionMatrix = new TransitionMatrix<char>();
             _alphabet = new SortedSet<char>(alphabet);
         }
 
-        private Automaton(HashSet<int> states, HashSet<int> startStates, HashSet<int> goalStates, TransitionMatrix<char> transitionMatrix, SortedSet<char> alphabet)
+        private Automaton(HashSet<int> states, HashSet<int> startStates, HashSet<int> finalStates, TransitionMatrix<char> transitionMatrix, SortedSet<char> alphabet)
         {
             _states = states;
             _startStates = startStates;
-            _goalStates = goalStates;
+            _finalStates = finalStates;
             _transitionMatrix = transitionMatrix;
             _alphabet = alphabet;
         }
@@ -53,7 +53,7 @@ namespace MatrixSolver.Computations.DataTypes.Automata
         /// <summary>
         /// Adds an empty state to the automaton. Throws if state Id already in use
         /// </summary>
-        public int AddState(bool isGoalState = false, bool isStartState = false)
+        public int AddState(bool isFinalState = false, bool isStartState = false)
         {
             var stateId = _statesIdCounter++;
             if (!_states.Add(stateId))
@@ -61,9 +61,9 @@ namespace MatrixSolver.Computations.DataTypes.Automata
                 throw new InvalidOperationException($"State with Id={stateId} already exists");
             }
 
-            if (isGoalState)
+            if (isFinalState)
             {
-                _goalStates.Add(stateId);
+                _finalStates.Add(stateId);
             }
             if (isStartState)
             {
@@ -103,13 +103,8 @@ namespace MatrixSolver.Computations.DataTypes.Automata
         {
             _states.Remove(state);
             _startStates.Remove(state);
-            _goalStates.Remove(state);
+            _finalStates.Remove(state);
             _transitionMatrix.RemoveState(state, skipIncomingTransitions);
-        }
-
-        public bool DeleteTransition(int fromState, int toState, char symbol)
-        {
-            return _transitionMatrix.RemoveTransition(fromState, toState, symbol);
         }
 
         public bool SetAsStartState(int currentStateId)
@@ -122,14 +117,14 @@ namespace MatrixSolver.Computations.DataTypes.Automata
             return _startStates.Add(currentStateId);
         }
 
-        public bool SetAsGoalState(int currentStateId)
+        public bool SetAsFinalState(int currentStateId)
         {
             if (!_states.TryGetValue(currentStateId, out var fromState))
             {
                 throw new InvalidOperationException($"State with id {currentStateId} does not exist");
             }
 
-            return _goalStates.Add(currentStateId);
+            return _finalStates.Add(currentStateId);
         }
 
         public bool UnsetStartState(int currentStateId)
@@ -142,25 +137,25 @@ namespace MatrixSolver.Computations.DataTypes.Automata
             return _startStates.Remove(currentStateId);
         }
 
-        public bool UnsetGoalState(int currentStateId)
+        public bool UnsetFinalState(int currentStateId)
         {
             if (!_states.TryGetValue(currentStateId, out var fromState))
             {
                 throw new InvalidOperationException($"State with id {currentStateId} does not exist");
             }
 
-            return _goalStates.Remove(currentStateId);
+            return _finalStates.Remove(currentStateId);
         }
 
         public bool IsValidWord(IEnumerable<char> word)
         {
-            if (_startStates.Count == 0 || _goalStates.Count == 0)
+            if (_startStates.Count == 0 || _finalStates.Count == 0)
             {
                 return false;
             }
 
             HashSet<int> currentStates = new HashSet<int>(_startStates);
-            AddEpsilonStates(currentStates, currentStates);
+            AddEpsilonStates(currentStates);
             foreach (var symbol in word)
             {
                 var nextStates = new HashSet<int>();
@@ -172,7 +167,7 @@ namespace MatrixSolver.Computations.DataTypes.Automata
                         nextStates.Add(nextState);
                     }
                 }
-                AddEpsilonStates(nextStates, nextStates);
+                AddEpsilonStates(nextStates);
                 if (nextStates.Count == 0)
                 {
                     // No states can be reached. Word is invalid.
@@ -182,7 +177,7 @@ namespace MatrixSolver.Computations.DataTypes.Automata
             }
             foreach (var state in currentStates)
             {
-                if (_goalStates.Contains(state))
+                if (_finalStates.Contains(state))
                 {
                     return true;
                 }
@@ -196,7 +191,7 @@ namespace MatrixSolver.Computations.DataTypes.Automata
             // Find all epsilon states from the original state.
             if (useEpsilonStatesFromInitial)
             {
-                AddEpsilonStates(states, states);
+                AddEpsilonStates(states);
             }
 
             var symbolStates = new HashSet<int>();
@@ -212,7 +207,7 @@ namespace MatrixSolver.Computations.DataTypes.Automata
             // Finally add the epsilon states again.
             if(useEpsilonStatesAtEnd)
             {
-                AddEpsilonStates(symbolStates, symbolStates);
+                AddEpsilonStates(symbolStates);
             }
             
             return symbolStates;
@@ -224,54 +219,54 @@ namespace MatrixSolver.Computations.DataTypes.Automata
         public Automaton ToDFA()
         {
             // A list of states. Each list will become a new state
-            var automaton = new Automaton(_alphabet);
-            var newAutomatonStates = new Dictionary<SortedSet<int>, int>(_currentStateListComparer);
-            var stateStack = new Stack<SortedSet<int>>();
+            var automaton = new Automaton(Alphabet);
+            var newAutomatonStates = new Dictionary<HashSet<int>, int>(HashSet<int>.CreateSetComparer());
+            var stateQueue = new Queue<HashSet<int>>();
 
             // Setup subprocedure
-            Func<SortedSet<int>, bool, int> AddNewState = (SortedSet<int> set, bool isStartState) =>
+            Func<HashSet<int>, bool, int> AddNewState = (HashSet<int> set, bool isStartState) =>
             {
-                bool isGoalState = false;
+                bool isFinalState = false;
                 foreach (var currentState in set)
                 {
-                    if (this._goalStates.Contains(currentState))
+                    if (_finalStates.Contains(currentState))
                     {
-                        isGoalState = true;
+                        isFinalState = true;
                         break;
                     }
                 }
-                var currentStateId = automaton.AddState(isStartState: isStartState, isGoalState: isGoalState);
-                stateStack.Push(set);
+                var currentStateId = automaton.AddState(isStartState: isStartState, isFinalState: isFinalState);
+                stateQueue.Enqueue(set);
                 newAutomatonStates.Add(set, currentStateId);
                 return currentStateId;
             };
 
             // Begin DFA calculation
-            var set = new SortedSet<int>(_startStates);
-            AddEpsilonStates(set, set);
+            var set = new HashSet<int>(_startStates);
+            AddEpsilonStates(set);
             AddNewState(set, true);
-            while (stateStack.TryPop(out var currentStateList))
+            while (stateQueue.TryDequeue(out var currentStateList))
             {
                 var currentStateId = newAutomatonStates[currentStateList];
-                foreach (var symbol in _alphabet)
+                foreach (var symbol in Alphabet)
                 {
-                    var reachableStates = new SortedSet<int>();
+                    var reachableStates = new HashSet<int>();
                     foreach (var currentState in currentStateList)
                     {
-                        var transitionStates = _transitionMatrix.GetStates(currentState, symbol);
+                        var transitionStates = TransitionMatrix.GetStates(currentState, symbol);
                         foreach (var transitionState in transitionStates)
                         {
                             reachableStates.Add(transitionState);
                         }
                     }
-                    AddEpsilonStates(reachableStates, reachableStates);
-                    // We have all reachable states with the given symbol. If a state in the new automata
-                    // already exists for this combination, then we don't need to add a new state.
                     if (reachableStates.Count == 0)
                     {
                         // Ignore the empty state
                         continue;
                     }
+                    AddEpsilonStates(reachableStates);
+                    // We have all reachable states with the given symbol. If a state in the new automata
+                    // already exists for this combination, then we don't need to add a new state.
                     if (!newAutomatonStates.TryGetValue(reachableStates, out var toStateId))
                     {
                         toStateId = AddNewState(reachableStates, false);
@@ -305,12 +300,12 @@ namespace MatrixSolver.Computations.DataTypes.Automata
             var stateQueue = new Queue<(int firstState, int secondState)>();
             Func<(int, int), bool, int> AddState = ((int firstState, int secondState) stateTuple, bool isStartState) =>
             {
-                bool isGoalState = false;
-                if (this.GoalStates.Contains(stateTuple.firstState) && automaton.GoalStates.Contains(stateTuple.secondState))
+                bool isFinalState = false;
+                if (this.FinalStates.Contains(stateTuple.firstState) && automaton.FinalStates.Contains(stateTuple.secondState))
                 {
-                    isGoalState = true;
+                    isFinalState = true;
                 }
-                var stateId = newAutomaton.AddState(isGoalState: isGoalState, isStartState: isStartState);
+                var stateId = newAutomaton.AddState(isFinalState: isFinalState, isStartState: isStartState);
                 stateLookup[stateTuple] = stateId;
                 stateQueue.Enqueue(stateTuple);
                 return stateId;
@@ -363,8 +358,8 @@ namespace MatrixSolver.Computations.DataTypes.Automata
             var newAutomatonStateLookup = new Dictionary<LinkedList<int>, int>();
             var equivalenceSetQueue = new Queue<LinkedList<int>>();
             // Add the start state to the automaton.
-            var equivalenceStateSet = equivalenceTree.EquivalenceLookup[_startStates.First()].States;
-            newAutomatonStateLookup[equivalenceStateSet] = newAutomaton.AddState(isStartState: true, isGoalState: _goalStates.Contains(equivalenceStateSet.First!.Value));
+            var equivalenceStateSet = equivalenceTree.EquivalenceLookup[StartStates.First()].States;
+            newAutomatonStateLookup[equivalenceStateSet] = newAutomaton.AddState(isStartState: true, isFinalState: FinalStates.Contains(equivalenceStateSet.First!.Value));
             equivalenceSetQueue.Enqueue(equivalenceStateSet);
 
             while(equivalenceSetQueue.TryDequeue(out var equivalenceSet))
@@ -388,7 +383,7 @@ namespace MatrixSolver.Computations.DataTypes.Automata
                         if(!newAutomatonStateLookup.TryGetValue(stateToEquivalence, out var newAutomatonStateTo))
                         {
                             // State is unknown. Add it to the automaton, and the state queue.
-                            newAutomatonStateTo = newAutomaton.AddState(isStartState: false, isGoalState: _goalStates.Contains(stateTo));
+                            newAutomatonStateTo = newAutomaton.AddState(isStartState: false, isFinalState: FinalStates.Contains(stateTo));
                             var equivalenceSetTo = equivalenceTree.EquivalenceLookup[stateTo].States;
                             equivalenceSetQueue.Enqueue(equivalenceSetTo);
                             newAutomatonStateLookup[equivalenceSetTo] = newAutomatonStateTo;
@@ -417,13 +412,13 @@ namespace MatrixSolver.Computations.DataTypes.Automata
             {
                 foreach(var symbol in _alphabet)
                 {
-                    if(_transitionMatrix.GetStates(state, symbol).Count > 1)
+                    if(TransitionMatrix.GetStates(state, symbol).Count > 1)
                     {
                         error = $"Automaton contains multiple transition from state {state} with symbol {symbol}, thus is not a DFA" +
                             ", and therefore minimization cannot be performed.";
                     }
                 }
-                if(_transitionMatrix.GetStates(state, Automaton.Epsilon).Count != 0)
+                if(TransitionMatrix.GetStates(state, Automaton.Epsilon).Count != 0)
                 {
                     error = $"Automaton contains an epsilon transition from state {state}, thus is not a DFA" +
                         ", and therefore minimization cannot be performed.";
@@ -436,23 +431,17 @@ namespace MatrixSolver.Computations.DataTypes.Automata
             return true;
         }
 
-        public Automaton Clone()
-        {
-            return new Automaton(new HashSet<int>(_states), new HashSet<int>(_startStates), 
-                new HashSet<int>(_goalStates), _transitionMatrix.Clone(), new SortedSet<char>(_alphabet));
-        }
-
         /// <summary>
         /// Populates <paramref name="transitionList" /> with all states that can be 
         /// reached from epsilon transition from <paramref name="fromStates" />
         /// </summary>
-        private void AddEpsilonStates(ISet<int> transitionList, IReadOnlyCollection<int> fromStates)
+        private void AddEpsilonStates(ISet<int> transitionList)
         {
             // Add epsilon states
-            var transitionStatesQueue = new Queue<int>(fromStates);
+            var transitionStatesQueue = new Queue<int>(transitionList);
             while (transitionStatesQueue.TryDequeue(out var state))
             {
-                var epsilonReachableStates = _transitionMatrix.GetStates(state, Epsilon);
+                var epsilonReachableStates = TransitionMatrix.GetStates(state, Epsilon);
                 foreach (var epsilonState in epsilonReachableStates)
                 {
                     if (transitionList.Add(epsilonState))
@@ -461,6 +450,12 @@ namespace MatrixSolver.Computations.DataTypes.Automata
                     }
                 }
             }
+        }
+
+        public Automaton Clone()
+        {
+            return new Automaton(new HashSet<int>(_states), new HashSet<int>(_startStates), 
+                new HashSet<int>(_finalStates), _transitionMatrix.Clone(), new SortedSet<char>(_alphabet));
         }
     }
 
