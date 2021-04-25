@@ -12,7 +12,7 @@
             // If you have changed target frameworks, make sure to update the program path.
             "program": "${workspaceFolder}/src/MatrixSolver/bin/Debug/netcoreapp3.1/MatrixSolver.dll",
             "args": [
-                "MatrixSolver/Examples/DifferentGCD.json"
+                "MatrixSolver/Examples/SimpleExamples/SimpleExample1.json"
             ],
             "cwd": "${workspaceFolder}/src",
             // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console
