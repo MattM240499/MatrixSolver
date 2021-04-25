@@ -31,19 +31,6 @@ namespace MatrixSolver.Computations.DataTypes
             }
         }
 
-        protected BigRational[,] AddBase(IMatrix2x2 right)
-        {
-            var values = new BigRational[Order, Order];
-            for (int rowIndex = 0; rowIndex < Order; rowIndex++)
-            {
-                for (int columnIndex = 0; columnIndex < Order; columnIndex++)
-                {
-                    values[rowIndex, columnIndex] = this.UnderlyingValues[rowIndex, columnIndex] + right.UnderlyingValues[rowIndex, columnIndex];
-                }
-            }
-            return values;
-        }
-
         protected BigRational[,] MultiplyBase(IMatrix2x2 left, IMatrix2x2 right)
         {
             var values = new BigRational[Order, Order];

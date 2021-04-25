@@ -27,7 +27,7 @@ namespace MatrixSolver.Computations.DataTypes.Automata
             nonFinalStates.AddLast(-1);
             foreach (var state in automaton.States)
             {
-                if (automaton.GoalStates.Contains(state))
+                if (automaton.FinalStates.Contains(state))
                 {
                     finalStates.AddLast(state);
                 }

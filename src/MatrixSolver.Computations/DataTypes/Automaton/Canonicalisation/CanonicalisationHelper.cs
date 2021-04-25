@@ -21,39 +21,25 @@ namespace MatrixSolver.Computations.DataTypes.Automata.Canonicalisation
 
         internal static Automaton PopulateDFAWithXAndEpsilonTransitions(this Automaton automaton)
         {
+            return automaton.PopulateDFAWithXAndEpsilonTransitionsQueueBased();
+        }
+
+        [Obsolete("Queue based approach is much faster.")]
+        internal static Automaton PopulateDFAWithXAndEpsilonTransitionsNaive(this Automaton automaton)
+        {
             bool changes = true;
             while (changes)
             {
-                changes = false;
-                // First, Look for XX and add epsilon transition where possible
-                foreach (var state in automaton.States)
-                {
-                    var states = automaton.GetStatesReachableFromStateWithSymbol(state, Constants.RegularLanguage.X, false);
-
-                    foreach (var xReachableState in states)
-                    {
-                        var epsilonStates = automaton.GetStatesReachableFromStateWithSymbol(xReachableState, Constants.RegularLanguage.X, false, false);
-                        foreach (var epsilonState in epsilonStates)
-                        {
-                            // Discard epsilon transition that loop back on the same state as they add no value
-                            if (state != epsilonState)
-                            {
-                                if (automaton.AddTransition(state, epsilonState, Automaton.Epsilon))
-                                {
-                                    changes = true;
-                                }
-                            }
-                        }
-                    }
-                }
-                // Look for Identity statements (RRR/SS)
+                changes = AddEpsilonStatesForXXSubPaths(automaton);
+                // Look for paths (RRR/SS)
                 foreach (var startState in automaton.States)
                 {
                     // Now look for S * X^alpha * S states
-                    var SSreachabilityDictionary = automaton.GetStatesReachableFromStateWithSymbol(startState, Constants.RegularLanguage.S, false)
+                    var SSreachabilityDictionary = automaton.GetStatesReachableFromStateWithSymbol(startState, Constants.RegularLanguage.S,
+                        useEpsilonStatesFromInitial: false, useEpsilonStatesAtEnd: true)
                         .ToDictionary((s) => s, (s) => ReachabilityStatus.Even())
-                        .ApplyMultipleXTransitionToReachabilityDictionary(automaton)
-                        .ApplyTransitionToReachabilityDictionary(automaton, Constants.RegularLanguage.S, false);
+                        .ApplyXTransitionToReachabilityDictionary(automaton)
+                        .ApplySOrRTransitionToReachabilityDictionary(automaton, Constants.RegularLanguage.S, false);
                     foreach (var (finalState, reachability) in SSreachabilityDictionary)
                     {
                         if (AddTransitionsFromReachabilityStatus(automaton, startState, finalState, reachability))
@@ -62,12 +48,13 @@ namespace MatrixSolver.Computations.DataTypes.Automata.Canonicalisation
                         }
                     }
                     // Add R * X^alpha1 * R * X^alpha2 * R
-                    var RRRreachabilityDictionary = automaton.GetStatesReachableFromStateWithSymbol(startState, Constants.RegularLanguage.R, false)
+                    var RRRreachabilityDictionary = automaton.GetStatesReachableFromStateWithSymbol(startState, Constants.RegularLanguage.R,
+                        useEpsilonStatesFromInitial: false, useEpsilonStatesAtEnd: true)
                         .ToDictionary((s) => s, (s) => ReachabilityStatus.Even())
-                        .ApplyMultipleXTransitionToReachabilityDictionary(automaton)
-                        .ApplyTransitionToReachabilityDictionary(automaton, Constants.RegularLanguage.R, true)
-                        .ApplyMultipleXTransitionToReachabilityDictionary(automaton)
-                        .ApplyTransitionToReachabilityDictionary(automaton, Constants.RegularLanguage.R, false);
+                        .ApplyXTransitionToReachabilityDictionary(automaton)
+                        .ApplySOrRTransitionToReachabilityDictionary(automaton, Constants.RegularLanguage.R, true)
+                        .ApplyXTransitionToReachabilityDictionary(automaton)
+                        .ApplySOrRTransitionToReachabilityDictionary(automaton, Constants.RegularLanguage.R, false);
                     foreach (var (finalState, reachability) in RRRreachabilityDictionary)
                     {
                         if (AddTransitionsFromReachabilityStatus(automaton, startState, finalState, reachability))
@@ -83,7 +70,6 @@ namespace MatrixSolver.Computations.DataTypes.Automata.Canonicalisation
         /// <summary>
         /// A queue based approach to performing the transition additions to the automaton.
         /// </summary>
-        /// <remark>Not used currently</remark>
         internal static Automaton PopulateDFAWithXAndEpsilonTransitionsQueueBased(this Automaton automaton)
         {
             var canonicalStateTransitionLookup = new CanonicalStateTransitionLookup(automaton);
@@ -95,25 +81,12 @@ namespace MatrixSolver.Computations.DataTypes.Automata.Canonicalisation
                     var toStates = automaton.TransitionMatrix.GetStates(state, symbol);
                     foreach (var toState in toStates)
                     {
-                        var transitions = canonicalStateTransitionLookup.AddTransition(state, symbol, toState);
-                        foreach (var transition in transitions)
-                        {
-                            transitionQueue.Enqueue(transition);
-                        }
+                        transitionQueue.Enqueue(new Transition(state, toState, symbol));
                     }
                 }
             }
             while (transitionQueue.TryDequeue(out var transition))
             {
-                if(transition.StateFrom == transition.StateTo && transition.Symbol == Automaton.Epsilon)
-                {
-                    continue;
-                }
-                if(!automaton.AddTransition(transition.StateFrom, transition.StateTo, transition.Symbol))
-                {
-                    continue;
-                }
-                
                 var transitions = canonicalStateTransitionLookup.AddTransition(transition.StateFrom, transition.Symbol, transition.StateTo);
                 foreach (var newTransition in transitions)
                 {
@@ -149,14 +122,25 @@ namespace MatrixSolver.Computations.DataTypes.Automata.Canonicalisation
             bool changes = true;
             while (changes)
             {
-                changes = false;
-                foreach (var state in automaton.States)
+                changes = AddEpsilonStatesForXXSubPaths(automaton);
+            }
+            return automaton;
+        }
+
+        private static bool AddEpsilonStatesForXXSubPaths(Automaton automaton)
+        {
+            var changes = false;
+            foreach (var state in automaton.States)
+            {
+                var states = automaton.GetStatesReachableFromStateWithSymbol(state, Constants.RegularLanguage.X, false);
+
+                foreach (var xReachableState in states)
                 {
-                    var xStates = automaton.GetStatesReachableFromStateWithSymbol(state, Constants.RegularLanguage.X);
-                    foreach (var xState in xStates)
+                    var epsilonStates = automaton.GetStatesReachableFromStateWithSymbol(xReachableState, Constants.RegularLanguage.X, false, false);
+                    foreach (var epsilonState in epsilonStates)
                     {
-                        var epsilonStates = automaton.GetStatesReachableFromStateWithSymbol(xState, Constants.RegularLanguage.X, false);
-                        foreach (var epsilonState in epsilonStates)
+                        // Discard epsilon transition that loop back on the same state as they add no value
+                        if (state != epsilonState)
                         {
                             if (automaton.AddTransition(state, epsilonState, Automaton.Epsilon))
                             {
@@ -166,15 +150,15 @@ namespace MatrixSolver.Computations.DataTypes.Automata.Canonicalisation
                     }
                 }
             }
-            return automaton;
+            return changes;
         }
 
-        private static IReadOnlyDictionary<int, ReachabilityStatus> ApplyMultipleXTransitionToReachabilityDictionary(
+        private static IReadOnlyDictionary<int, ReachabilityStatus> ApplyXTransitionToReachabilityDictionary(
             this IReadOnlyDictionary<int, ReachabilityStatus> currentReachabilityDictionary, Automaton automaton
         )
         {
             var newReachabilityDictionary = new Dictionary<int, ReachabilityStatus>(currentReachabilityDictionary);
-            foreach (var (currentState, x1Reachability) in currentReachabilityDictionary)
+            foreach (var (currentState, currentReachabilityStatus) in currentReachabilityDictionary)
             {
                 var reachableStates = automaton.GetStatesReachableFromStateWithSymbol(currentState, Constants.RegularLanguage.X, false);
                 // Now combine all those states with the current reachability dictionary
@@ -186,32 +170,31 @@ namespace MatrixSolver.Computations.DataTypes.Automata.Canonicalisation
                         newReachabilityDictionary[state] = stateReachability;
                     }
                     // This state has reachability of the opposite of the previous state
-                    stateReachability.OddReachable |= x1Reachability.EvenReachable;
-                    stateReachability.EvenReachable |= x1Reachability.OddReachable;
+                    stateReachability.OddReachable |= currentReachabilityStatus.EvenReachable;
+                    stateReachability.EvenReachable |= currentReachabilityStatus.OddReachable;
                 }
             }
             return newReachabilityDictionary;
         }
 
-        private static IReadOnlyDictionary<int, ReachabilityStatus> ApplyTransitionToReachabilityDictionary(
+        private static IReadOnlyDictionary<int, ReachabilityStatus> ApplySOrRTransitionToReachabilityDictionary(
             this IReadOnlyDictionary<int, ReachabilityStatus> currentReachabilityDictionary, Automaton automaton,
-             char symbol, bool useEpsilonStatesAtEnd)
+            char symbol, bool useEpsilonStatesAtEnd)
         {
             var newReachabilityDictionary = new Dictionary<int, ReachabilityStatus>();
-            foreach (var (state, reachabilityStatus) in currentReachabilityDictionary)
+            foreach (var (currentState, currentReachabilityStatus) in currentReachabilityDictionary)
             {
-                var newStates = automaton.GetStatesReachableFromStateWithSymbol(state, symbol, false, useEpsilonStatesAtEnd);
-                foreach (var newState in newStates)
+                var reachableStates = automaton.GetStatesReachableFromStateWithSymbol(currentState, symbol, false, useEpsilonStatesAtEnd);
+                foreach (var state in reachableStates)
                 {
-                    if (!newReachabilityDictionary.TryGetValue(newState, out var newStatereachabilityStatus))
+                    if (!newReachabilityDictionary.TryGetValue(state, out var stateReachability))
                     {
-                        newStatereachabilityStatus = new ReachabilityStatus();
-                        newReachabilityDictionary[newState] = newStatereachabilityStatus;
+                        stateReachability = new ReachabilityStatus();
+                        newReachabilityDictionary[state] = stateReachability;
                     }
-                    newStatereachabilityStatus.EvenReachable |= reachabilityStatus.EvenReachable;
-                    newStatereachabilityStatus.OddReachable |= reachabilityStatus.OddReachable;
+                    stateReachability.EvenReachable |= currentReachabilityStatus.EvenReachable;
+                    stateReachability.OddReachable |= currentReachabilityStatus.OddReachable;
                 }
-
             }
             return newReachabilityDictionary;
         }

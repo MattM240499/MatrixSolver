@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\MatrixSolver.Computations\MatrixSolver.Computations.csproj" />
+    <ProjectReference Include="..\..\src\MatrixSolver\MatrixSolver.csproj" />
   </ItemGroup>
 
 </Project>

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Extreme.Mathematics;
+using MatrixSolver;
 using MatrixSolver.Computations;
 using MatrixSolver.Computations.DataTypes;
 using Newtonsoft.Json;
@@ -14,14 +15,21 @@ namespace VectorReachabilitySolutionChecker
         static void Main(string[] args)
         {
             string matrixProduct;
-            if(args.Length == 0)
+            string inputFile = "";
+            if(args.Length < 1)
+            {
+               Console.WriteLine("Error: No argument received for input file");
+               return;
+            }
+            if(args.Length < 2)
             {
                 Console.WriteLine("No argument received for string. String assumed to be the empty string.");
                 matrixProduct = "";
             }
             else
             {
-                matrixProduct = args[0];
+                inputFile = args[0];
+                matrixProduct = args[1];
             }
             
             var symbols = new HashSet<char>(MatrixSolver.Computations.Constants.RegularLanguage.Symbols);
@@ -33,7 +41,6 @@ namespace VectorReachabilitySolutionChecker
                 }
             }
 
-            string inputFile = "../../src/Test.json";
             // TODO: Duplicate of main function. Expose this procedure somewhere to reduce duplicate code.
             var json = File.ReadAllText(inputFile);
             var data = JsonConvert.DeserializeObject<InputData>(json);

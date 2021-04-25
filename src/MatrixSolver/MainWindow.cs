@@ -93,7 +93,7 @@ namespace MatrixSolver
                         node.Attr.Color = Color.Red;
                         node.Attr.Styles.Append(Microsoft.Msagl.Drawing.Style.Dashed);
                     }
-                    if (_automaton.GoalStates.Contains(state))
+                    if (_automaton.FinalStates.Contains(state))
                     {
                         node.Attr.Shape = Shape.DoubleCircle;
                     }

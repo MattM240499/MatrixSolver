@@ -76,45 +76,29 @@ namespace MatrixSolver.Computations.DataTypes.Automata.Canonicalisation
 
             var toAddTransitions = new List<Transition>();
 
-            Action<int, int, char, bool> addTransition = (fromState, toState, symbol, negated) =>
+            Action<int, int, char> addTransition = (fromState, toState, symbol) =>
             {
                 if (fromState == toState && symbol == Automaton.Epsilon)
                 {
                     return;
                 }
-                toAddTransitions.Add(new Transition(fromState, toState, symbol, negated));
+                if(!_automaton.AddTransition(fromState, toState, symbol))
+                {
+                    return;
+                }
+                toAddTransitions.Add(new Transition(fromState, toState, symbol));
             };
+
             // Adds an X or epsilon transition from a given state to another, based on an existing reachability status
             Action<int, int, ReachabilityStatus, bool> addTransitionFromReachabilityStatus = (fromState, toState, reachabilityStatus, negated) =>
             {
                 if ((reachabilityStatus.EvenReachable && negated) || (reachabilityStatus.OddReachable && !negated))
                 {
-                    addTransition(fromState, toState, Constants.RegularLanguage.X, false);
+                    addTransition(fromState, toState, Constants.RegularLanguage.X);
                 }
                 if ((reachabilityStatus.OddReachable && negated) || (reachabilityStatus.EvenReachable && !negated))
                 {
-                    addTransition(fromState, toState, Automaton.Epsilon, false);
-                }
-            };
-
-            // Updates a reachability status lookup by adding the data from the current reachabilityStatus
-            Action<int, ReachabilityStatus, Dictionary<int, ReachabilityStatus>, bool> updateReachabilityStatus =
-                (fromState, reachabilityStatus, reachabilityLookup, negated) =>
-            {
-                if (!reachabilityLookup.TryGetValue(fromState, out var currentReachabilityStatus))
-                {
-                    currentReachabilityStatus = new ReachabilityStatus();
-                    reachabilityLookup[fromState] = currentReachabilityStatus;
-                }
-                if (negated)
-                {
-                    currentReachabilityStatus.EvenReachable |= reachabilityStatus.OddReachable;
-                    currentReachabilityStatus.OddReachable |= reachabilityStatus.EvenReachable;
-                }
-                else
-                {
-                    currentReachabilityStatus.EvenReachable |= reachabilityStatus.EvenReachable;
-                    currentReachabilityStatus.OddReachable |= reachabilityStatus.OddReachable;
+                    addTransition(fromState, toState, Automaton.Epsilon);
                 }
             };
 
@@ -131,46 +115,15 @@ namespace MatrixSolver.Computations.DataTypes.Automata.Canonicalisation
                 return rightReachabilityDictionary;
             };
 
-            Func<Dictionary<int, ReachabilityStatus>, char, bool, Dictionary<int, ReachabilityStatus>> applyTransitionToReachabilityDictionary = (reachabilityDictionary, symbol, includeEpsilon) =>
-            {
-                var newReachabilityDictionary = new Dictionary<int, ReachabilityStatus>();
-                foreach (var reachbilityLookup in reachabilityDictionary)
-                {
-                    IEnumerable<KeyValuePair<int, ReachabilityStatus>> reachableStates = null!;
-                    if (includeEpsilon)
-                    {
-                        reachableStates = _outgoingTransitionLookup[reachbilityLookup.Key].GetTransitionDictionary(symbol);
-                    }
-                    else
-                    {
-                        reachableStates = _automaton.TransitionMatrix.GetStates(reachbilityLookup.Key, symbol).Select(s =>
-                            KeyValuePair.Create(s, ReachabilityStatus.Even()));
-                    }
-
-                    foreach (var state in reachableStates)
-                    {
-                        var newReachability = state.Value.Times(reachbilityLookup.Value);
-                        if (!newReachabilityDictionary.TryGetValue(state.Key, out var newStatereachabilityStatus))
-                        {
-                            newStatereachabilityStatus = new ReachabilityStatus();
-                            newReachabilityDictionary[state.Key] = newStatereachabilityStatus;
-                        }
-                        newStatereachabilityStatus.EvenReachable |= newReachability.EvenReachable;
-                        newStatereachabilityStatus.OddReachable |= newReachability.OddReachable;
-                    }
-                }
-                return newReachabilityDictionary;
-            };
-
             // Adds transitions for each side combined together with the middle. Should only be called on combinations that make sense.
             Action<Dictionary<int, ReachabilityStatus>, char, int, bool> combineWithBothSides =
-                (incomingReachabilityLookup, symbol, count, negated) =>
+                (incomingReachabilityLookup, symbol, rightSymbolCount, negated) =>
             {
                 var rightReachabilityDictionary = getEpsilonReachabilityDictionary(stateTo);
 
-                for (int i = 1; i <= count; i++)
+                for (int i = 1; i <= rightSymbolCount; i++)
                 {
-                    rightReachabilityDictionary = applyTransitionToReachabilityDictionary(rightReachabilityDictionary, symbol, i != count);
+                    rightReachabilityDictionary = ApplyTransitionToReachabilityDictionary(rightReachabilityDictionary, symbol, i != rightSymbolCount);
                 }
 
                 foreach (var leftReachabilityStatus in incomingReachabilityLookup)
@@ -193,13 +146,13 @@ namespace MatrixSolver.Computations.DataTypes.Automata.Canonicalisation
             };
 
             Action<char, int, bool> combineRight =
-                (symbol, count, negated) =>
+                (symbol, rightSymbolCount, negated) =>
             {
                 var rightReachabilityDictionary = getEpsilonReachabilityDictionary(stateTo);
 
-                for (int i = 1; i <= count; i++)
+                for (int i = 1; i <= rightSymbolCount; i++)
                 {
-                    rightReachabilityDictionary = applyTransitionToReachabilityDictionary(rightReachabilityDictionary, symbol, i != count);
+                    rightReachabilityDictionary = ApplyTransitionToReachabilityDictionary(rightReachabilityDictionary, symbol, i != rightSymbolCount);
                 }
                 foreach (var rightReachabilityLookup in rightReachabilityDictionary)
                 {
@@ -215,8 +168,8 @@ namespace MatrixSolver.Computations.DataTypes.Automata.Canonicalisation
                 {
                     var currentOutState = stateReachabilityLookup.Key;
                     var currentReachabilityStatus = stateReachabilityLookup.Value;
-                    updateReachabilityStatus(currentOutState, currentReachabilityStatus, getToReachabilitySet(_incomingTransitionLookup[inState]), negated);
-                    updateReachabilityStatus(inState, currentReachabilityStatus, getToReachabilitySet(_outgoingTransitionLookup[currentOutState]), negated);
+                    UpdateReachabilityStatus(currentOutState, currentReachabilityStatus, getToReachabilitySet(_incomingTransitionLookup[inState]), negated);
+                    UpdateReachabilityStatus(inState, currentReachabilityStatus, getToReachabilitySet(_outgoingTransitionLookup[currentOutState]), negated);
                 }
             };
 
@@ -226,21 +179,21 @@ namespace MatrixSolver.Computations.DataTypes.Automata.Canonicalisation
                 foreach (var stateReachabilityLookup in iterateReachabilityLookup)
                 {
                     var currentReachabilityStatus = stateReachabilityLookup.Value;
-                    updateReachabilityStatus(stateFrom, currentReachabilityStatus, getToReachabilitySet(_incomingTransitionLookup[stateReachabilityLookup.Key]), negated);
-                    updateReachabilityStatus(stateReachabilityLookup.Key, currentReachabilityStatus, getToReachabilitySet(_outgoingTransitionLookup[stateFrom]), negated);
+                    UpdateReachabilityStatus(stateFrom, currentReachabilityStatus, getToReachabilitySet(_incomingTransitionLookup[stateReachabilityLookup.Key]), negated);
+                    UpdateReachabilityStatus(stateReachabilityLookup.Key, currentReachabilityStatus, getToReachabilitySet(_outgoingTransitionLookup[stateFrom]), negated);
                 }
             };
 
             Action<Dictionary<int, ReachabilityStatus>, Func<StateTransitions, Dictionary<int, ReachabilityStatus>>, bool> updateTransitionSetLeft =
                 (iterateReachabilityLookup, getToReachabilitySet, negated) =>
             {
-                foreach(var stateReachabilityLookup in iterateReachabilityLookup)
+                foreach (var stateReachabilityLookup in iterateReachabilityLookup)
                 {
-                    foreach(var epsilonReachability in getEpsilonReachabilityDictionary(stateTo))
+                    foreach (var epsilonReachability in getEpsilonReachabilityDictionary(stateTo))
                     {
                         var combinedReachability = stateReachabilityLookup.Value.Times(epsilonReachability.Value);
-                        updateReachabilityStatus(epsilonReachability.Key, combinedReachability,  getToReachabilitySet(_outgoingTransitionLookup[stateReachabilityLookup.Key]), false);
-                        updateReachabilityStatus(stateReachabilityLookup.Key, combinedReachability,  getToReachabilitySet(_incomingTransitionLookup[epsilonReachability.Key]), false);
+                        UpdateReachabilityStatus(epsilonReachability.Key, combinedReachability, getToReachabilitySet(_outgoingTransitionLookup[stateReachabilityLookup.Key]), false);
+                        UpdateReachabilityStatus(stateReachabilityLookup.Key, combinedReachability, getToReachabilitySet(_incomingTransitionLookup[epsilonReachability.Key]), false);
                     }
                 }
             };
@@ -255,8 +208,8 @@ namespace MatrixSolver.Computations.DataTypes.Automata.Canonicalisation
                         var leftState = lefStateReachabilityLookup.Key;
                         var rightState = rightStateReachabilityLookup.Key;
                         var currentReachabilityStatus = lefStateReachabilityLookup.Value.Times(rightStateReachabilityLookup.Value);
-                        updateReachabilityStatus(leftState, currentReachabilityStatus, getToReachabilitySet(_incomingTransitionLookup[rightState]), negated);
-                        updateReachabilityStatus(rightState, currentReachabilityStatus, getToReachabilitySet(_outgoingTransitionLookup[leftState]), negated);
+                        UpdateReachabilityStatus(leftState, currentReachabilityStatus, getToReachabilitySet(_incomingTransitionLookup[rightState]), negated);
+                        UpdateReachabilityStatus(rightState, currentReachabilityStatus, getToReachabilitySet(_outgoingTransitionLookup[leftState]), negated);
                     }
                 }
             };
@@ -277,7 +230,7 @@ namespace MatrixSolver.Computations.DataTypes.Automata.Canonicalisation
                 // In other words:
                 // For R + RR = X or RR + R = X  add a transition
                 // For R + R + R = X add a transition
-                // For R + R = RR update the dictionaries. 
+                // For R + R = RR update the dictionaries.
                 case Constants.RegularLanguage.R:
                     // Update R + X/epsilon
                     updateTransitionSetRight(_outgoingTransitionLookup[stateTo].EpsilonTransitions, (s) => s.RTransitions, false);
@@ -299,12 +252,11 @@ namespace MatrixSolver.Computations.DataTypes.Automata.Canonicalisation
                     if (symbol == Constants.RegularLanguage.X)
                     {
                         // Update chains set
-                        foreach(var chainEnd in _outgoingTransitionLookup[stateTo].EpsilonChains.Append(stateTo))
+                        foreach (var chainEnd in _outgoingTransitionLookup[stateTo].EpsilonChains.Append(stateTo))
                         {
                             _outgoingTransitionLookup[stateFrom].XEpsilonChains.Add(chainEnd);
                             _incomingTransitionLookup[chainEnd].XEpsilonChains.Add(stateFrom);
                         }
-                        
 
                         even = false;
                         // Add epsilon transitions for X + X
@@ -313,12 +265,12 @@ namespace MatrixSolver.Computations.DataTypes.Automata.Canonicalisation
                         // so we should just add the state to the automaton, so long as it doesn't go to itself.
                         foreach (var xChainStart in _incomingTransitionLookup[stateFrom].XEpsilonChains)
                         {
-                            addTransition(xChainStart, stateTo, Automaton.Epsilon, false);
+                            addTransition(xChainStart, stateTo, Automaton.Epsilon);
                         }
                         var xStates = _automaton.GetStatesReachableFromStateWithSymbol(stateTo, 'X', true, false);
                         foreach (var xState in xStates)
                         {
-                            addTransition(stateFrom, xState, Automaton.Epsilon, false);
+                            addTransition(stateFrom, xState, Automaton.Epsilon);
                         }
                     }
                     else
@@ -326,14 +278,14 @@ namespace MatrixSolver.Computations.DataTypes.Automata.Canonicalisation
                         // Update chains set
                         _outgoingTransitionLookup[stateFrom].EpsilonChains.Add(stateTo);
                         _incomingTransitionLookup[stateTo].EpsilonChains.Add(stateFrom);
-                        foreach(var chainEnd in _outgoingTransitionLookup[stateTo].EpsilonChains.Append(stateTo))
+                        foreach (var chainEnd in _outgoingTransitionLookup[stateTo].EpsilonChains.Append(stateTo))
                         {
-                            foreach(var chainStart in _incomingTransitionLookup[stateFrom].XEpsilonChains)
+                            foreach (var chainStart in _incomingTransitionLookup[stateFrom].XEpsilonChains)
                             {
                                 _outgoingTransitionLookup[chainStart].XEpsilonChains.Add(chainEnd);
                                 _incomingTransitionLookup[chainEnd].XEpsilonChains.Add(chainStart);
                             }
-                            foreach(var chainStart in _incomingTransitionLookup[stateFrom].EpsilonChains)
+                            foreach (var chainStart in _incomingTransitionLookup[stateFrom].EpsilonChains)
                             {
                                 _outgoingTransitionLookup[chainStart].EpsilonChains.Add(chainEnd);
                                 _incomingTransitionLookup[chainEnd].EpsilonChains.Add(chainStart);
@@ -343,13 +295,19 @@ namespace MatrixSolver.Computations.DataTypes.Automata.Canonicalisation
                         // Combine with X on each side X
                         var incomingXEpsilonChains = _incomingTransitionLookup[stateFrom].XEpsilonChains;
                         var xStates = _automaton.GetStatesReachableFromStateWithSymbol(stateTo, 'X', true, false);
+
+                        var newTransitions = new List<(int from, int to)>();
                         foreach (var startXState in incomingXEpsilonChains)
                         {
                             foreach (var outgoingX in xStates)
                             {
                                 // Both X. Combine.
-                                addTransition(startXState, outgoingX, Automaton.Epsilon, false);
+                                newTransitions.Add((startXState, outgoingX));
                             }
+                        }
+                        foreach(var transition in newTransitions)
+                        {
+                            addTransition(transition.from, transition.to, Automaton.Epsilon);
                         }
                     }
 
@@ -377,14 +335,14 @@ namespace MatrixSolver.Computations.DataTypes.Automata.Canonicalisation
                     }
                     // Combine R + R
                     var rightReachability = getEpsilonReachabilityDictionary(stateTo);
-                    rightReachability = applyTransitionToReachabilityDictionary(rightReachability, 'R', false);
-                    foreach(var incomingRReachability in _incomingTransitionLookup[stateFrom].RTransitions)
+                    rightReachability = ApplyTransitionToReachabilityDictionary(rightReachability, 'R', false);
+                    foreach (var incomingRReachability in _incomingTransitionLookup[stateFrom].RTransitions)
                     {
-                        foreach(var epsilonReachability in rightReachability)
+                        foreach (var epsilonReachability in rightReachability)
                         {
                             var combinedReachability = incomingRReachability.Value.Times(epsilonReachability.Value);
-                            updateReachabilityStatus(epsilonReachability.Key, combinedReachability,  _outgoingTransitionLookup[incomingRReachability.Key].RRTransitions, !even);
-                            updateReachabilityStatus(incomingRReachability.Key, combinedReachability,  _incomingTransitionLookup[epsilonReachability.Key].RRTransitions, !even);
+                            UpdateReachabilityStatus(epsilonReachability.Key, combinedReachability, _outgoingTransitionLookup[incomingRReachability.Key].RRTransitions, !even);
+                            UpdateReachabilityStatus(incomingRReachability.Key, combinedReachability, _incomingTransitionLookup[epsilonReachability.Key].RRTransitions, !even);
                         }
                     }
 
@@ -401,48 +359,60 @@ namespace MatrixSolver.Computations.DataTypes.Automata.Canonicalisation
             }
             return toAddTransitions;
         }
-    }
 
-    internal class StateTransitions
-    {
-        public Dictionary<int, ReachabilityStatus> EpsilonTransitions { get; } = new Dictionary<int, ReachabilityStatus>();
-        public Dictionary<int, ReachabilityStatus> RTransitions { get; } = new Dictionary<int, ReachabilityStatus>();
-        public Dictionary<int, ReachabilityStatus> RRTransitions { get; } = new Dictionary<int, ReachabilityStatus>();
-        public Dictionary<int, ReachabilityStatus> STransitions { get; } = new Dictionary<int, ReachabilityStatus>();
-
-        public HashSet<int> XEpsilonChains {get;} = new HashSet<int>();
-        public HashSet<int> EpsilonChains {get;} = new HashSet<int>();
-
-        public Dictionary<int, ReachabilityStatus> GetTransitionDictionary(char symbol)
+        private Dictionary<int, ReachabilityStatus> ApplyTransitionToReachabilityDictionary(Dictionary<int, ReachabilityStatus> reachabilityDictionary,
+            char symbol, bool includeEpsilon)
         {
-            switch (symbol)
+            var newReachabilityDictionary = new Dictionary<int, ReachabilityStatus>();
+            foreach (var reachbilityLookup in reachabilityDictionary)
             {
-                case Constants.RegularLanguage.R:
-                    return RTransitions;
-                case Constants.RegularLanguage.S:
-                    return STransitions;
-                case Constants.RegularLanguage.X:
-                case Automaton.Epsilon:
-                    return EpsilonTransitions;
-                default:
-                    throw new ArgumentException($"Character {symbol} has no understood implementation for canonicalisation");
+                IEnumerable<KeyValuePair<int, ReachabilityStatus>> reachableStates = null!;
+                if (includeEpsilon)
+                {
+                    reachableStates = _outgoingTransitionLookup[reachbilityLookup.Key].GetTransitionDictionary(symbol);
+                }
+                else
+                {
+                    reachableStates = _automaton.TransitionMatrix.GetStates(reachbilityLookup.Key, symbol).Select(s =>
+                        KeyValuePair.Create(s, ReachabilityStatus.Even()));
+                }
+
+                foreach (var state in reachableStates)
+                {
+                    var newReachability = state.Value.Times(reachbilityLookup.Value);
+                    if (!newReachabilityDictionary.TryGetValue(state.Key, out var newStatereachabilityStatus))
+                    {
+                        newStatereachabilityStatus = new ReachabilityStatus();
+                        newReachabilityDictionary[state.Key] = newStatereachabilityStatus;
+                    }
+                    newStatereachabilityStatus.EvenReachable |= newReachability.EvenReachable;
+                    newStatereachabilityStatus.OddReachable |= newReachability.OddReachable;
+                }
             }
+            return newReachabilityDictionary;
         }
-    }
 
-    internal class Transition
-    {
-        public int StateFrom { get; }
-        public int StateTo { get; }
-        public char Symbol { get; }
-        public bool Negated { get; }
-
-        public Transition(int stateFrom, int stateTo, char symbol, bool negated)
+        /// <summary>
+        /// Updates a reachability status lookup by adding the data from the current reachabilityStatus
+        /// </summary>
+        private void UpdateReachabilityStatus(int fromState, ReachabilityStatus reachabilityStatus, 
+            Dictionary<int, ReachabilityStatus> reachabilityLookup, bool negated)
         {
-            StateFrom = stateFrom;
-            StateTo = stateTo;
-            Symbol = symbol;
-            Negated = negated;
+            if (!reachabilityLookup.TryGetValue(fromState, out var currentReachabilityStatus))
+            {
+                currentReachabilityStatus = new ReachabilityStatus();
+                reachabilityLookup[fromState] = currentReachabilityStatus;
+            }
+            if (negated)
+            {
+                currentReachabilityStatus.EvenReachable |= reachabilityStatus.OddReachable;
+                currentReachabilityStatus.OddReachable |= reachabilityStatus.EvenReachable;
+            }
+            else
+            {
+                currentReachabilityStatus.EvenReachable |= reachabilityStatus.EvenReachable;
+                currentReachabilityStatus.OddReachable |= reachabilityStatus.OddReachable;
+            }
         }
     }
 }

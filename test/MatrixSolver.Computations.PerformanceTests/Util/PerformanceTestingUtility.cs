@@ -1,6 +1,8 @@
 
 using System;
+using System.Linq;
 using MatrixSolver.Computations.DataTypes.Automata;
+using Xunit;
 
 namespace MatrixSolver.Computations.PerformanceTests
 {
@@ -15,7 +17,7 @@ namespace MatrixSolver.Computations.PerformanceTests
                 automaton.AddState();
             }
             automaton.SetAsStartState(0);
-            automaton.SetAsGoalState(states - 1);
+            automaton.SetAsFinalState(states - 1);
             for (int i = 0; i < states; i++)
             {
                 foreach (var symbol in alphabet)
@@ -25,6 +27,23 @@ namespace MatrixSolver.Computations.PerformanceTests
                 }
             }
             return automaton;
+        }
+
+        internal static void AssertAutomatonEqual(Automaton left, Automaton right)
+        {
+            Assert.Equal(left.Alphabet.OrderBy(i => i), right.Alphabet.OrderBy(i => i));
+            Assert.Equal(left.States.OrderBy(i => i), right.States.OrderBy(i => i));
+            Assert.Equal(left.StartStates.OrderBy(i => i), right.StartStates.OrderBy(i => i));
+            Assert.Equal(left.FinalStates.OrderBy(i => i), right.FinalStates.OrderBy(i => i));
+            foreach(var state in left.States)
+            {
+                foreach(var letter in left.Alphabet)
+                {
+                    var leftStates = left.TransitionMatrix.GetStates(state, letter);
+                    var rightStates = right.TransitionMatrix.GetStates(state, letter);
+                    Assert.Equal(leftStates.OrderBy(i => i), rightStates.OrderBy(i => i));
+                }
+            }
         }
     }
 }

@@ -39,11 +39,11 @@ namespace MatrixSolver.Computations.Tests.DataTypes.Automata
         [InlineData(true, true)]
         [InlineData(true, false)]
         [InlineData(false, true)]
-        public void AddState_SetsStateTypes(bool isStartState, bool isGoalState)
+        public void AddState_SetsStateTypes(bool isStartState, bool isFinalState)
         {
             var automaton = new Automaton(_alphabet);
 
-            int stateId = automaton.AddState(isGoalState: isGoalState, isStartState: isStartState);
+            int stateId = automaton.AddState(isFinalState: isFinalState, isStartState: isStartState);
             Assert.Single(automaton.States);
             Assert.Single(automaton.States);
             if (isStartState)
@@ -55,14 +55,14 @@ namespace MatrixSolver.Computations.Tests.DataTypes.Automata
             {
                 Assert.Empty(automaton.StartStates);
             }
-            if (isGoalState)
+            if (isFinalState)
             {
-                Assert.Single(automaton.GoalStates);
-                Assert.Contains(stateId, automaton.GoalStates);
+                Assert.Single(automaton.FinalStates);
+                Assert.Contains(stateId, automaton.FinalStates);
             }
             else
             {
-                Assert.Empty(automaton.GoalStates);
+                Assert.Empty(automaton.FinalStates);
             }
         }
 
@@ -138,10 +138,10 @@ namespace MatrixSolver.Computations.Tests.DataTypes.Automata
         }
 
         [Fact]
-        public void IsValidWord_ReturnsFalse_IfNoGoalStates()
+        public void IsValidWord_ReturnsFalse_IfNoFinalStates()
         {
             var automaton = CreateDFA1();
-            automaton.UnsetGoalState(3);
+            automaton.UnsetFinalState(3);
             Assert.False(automaton.IsValidWord("abc"));
         }
 
@@ -174,7 +174,7 @@ namespace MatrixSolver.Computations.Tests.DataTypes.Automata
             // https://www.youtube.com/watch?v=0XaGAkY09Wc&t=2s
             var automaton = CreateEmptyAutomatonWithStates(5);
             automaton.SetAsStartState(0);
-            automaton.SetAsGoalState(4);
+            automaton.SetAsFinalState(4);
             automaton.AddTransition(0, 1, 'a');
             automaton.AddTransition(0, 2, 'b');
             automaton.AddTransition(1, 1, 'a');
@@ -195,7 +195,7 @@ namespace MatrixSolver.Computations.Tests.DataTypes.Automata
         {
             var automaton = CreateEmptyAutomatonWithStates(4);
             automaton.SetAsStartState(0);
-            automaton.SetAsGoalState(3);
+            automaton.SetAsFinalState(3);
             automaton.AddTransition(0, 1, 'a');
             automaton.AddTransition(0, 3, 'b');
             automaton.AddTransition(1, 2, 'a');
@@ -216,7 +216,7 @@ namespace MatrixSolver.Computations.Tests.DataTypes.Automata
         {
             var automaton = CreateEmptyAutomatonWithStates(4);
             automaton.SetAsStartState(0);
-            automaton.SetAsGoalState(3);
+            automaton.SetAsFinalState(3);
             automaton.AddTransition(0, 1, 'a');
             automaton.AddTransition(0, 1, 'b');
             automaton.AddTransition(1, 2, 'a');
@@ -238,7 +238,7 @@ namespace MatrixSolver.Computations.Tests.DataTypes.Automata
             // https://www.youtube.com/watch?v=ex9sPLq5CRg
             var automaton = CreateEmptyAutomatonWithStates(8);
             automaton.SetAsStartState(0);
-            automaton.SetAsGoalState(2);
+            automaton.SetAsFinalState(2);
             automaton.AddTransition(0, 1, 'a');
             automaton.AddTransition(0, 5, 'b');
             automaton.AddTransition(1, 6, 'a');
@@ -264,14 +264,14 @@ namespace MatrixSolver.Computations.Tests.DataTypes.Automata
         }
 
         [Fact]
-        public void Minimize_MinimizesCorrectly5_MultipleGoalStates()
+        public void Minimize_MinimizesCorrectly5_MultipleFinalStates()
         {
             // https://www.youtube.com/watch?v=DV8cZp-2VmM
             var automaton = CreateEmptyAutomatonWithStates(6);
             automaton.SetAsStartState(0);
-            automaton.SetAsGoalState(2);
-            automaton.SetAsGoalState(3);
-            automaton.SetAsGoalState(4);
+            automaton.SetAsFinalState(2);
+            automaton.SetAsFinalState(3);
+            automaton.SetAsFinalState(4);
             automaton.AddTransition(0, 1, 'a');
             automaton.AddTransition(0, 2, 'b');
             automaton.AddTransition(1, 0, 'a');
@@ -299,7 +299,7 @@ namespace MatrixSolver.Computations.Tests.DataTypes.Automata
             // https://www.youtube.com/watch?v=DV8cZp-2VmM
             var automaton = CreateEmptyAutomatonWithStates(4);
             automaton.SetAsStartState(0);
-            automaton.SetAsGoalState(2);
+            automaton.SetAsFinalState(2);
             automaton.AddTransition(0, 1, 'a');
             automaton.AddTransition(1, 2, 'a');
             automaton.AddTransition(1, 3, 'b');
@@ -315,7 +315,7 @@ namespace MatrixSolver.Computations.Tests.DataTypes.Automata
             // https://www.youtube.com/watch?v=DV8cZp-2VmM
             var automaton = CreateEmptyAutomatonWithStates(4);
             automaton.SetAsStartState(0);
-            automaton.SetAsGoalState(2);
+            automaton.SetAsFinalState(2);
             automaton.AddTransition(0, 1, 'a');
             automaton.AddTransition(0, 1, 'b');
             automaton.AddTransition(1, 2, 'a');
@@ -346,13 +346,13 @@ namespace MatrixSolver.Computations.Tests.DataTypes.Automata
         }
 
         [Fact]
-        public void Minimize_MinimizesCorrectly_WithOnlyGoalStates()
+        public void Minimize_MinimizesCorrectly_WithOnlyFinalStates()
         {
             var automaton = CreateEmptyAutomatonWithStates(4);
             automaton.SetAsStartState(0);
             for (int i = 0; i < 4; i++)
             {
-                automaton.SetAsGoalState(i);
+                automaton.SetAsFinalState(i);
                 // Do some random-ish states
                 automaton.AddTransition(i, (2 * i + 2) % 4, 'a');
                 automaton.AddTransition(i, (5 * i + 1) % 4, 'b');
@@ -361,7 +361,7 @@ namespace MatrixSolver.Computations.Tests.DataTypes.Automata
 
             var minimizedAutomaton = automaton.MinimizeDFA();
             Assert.Equal(1, minimizedAutomaton.States.Count);
-            Assert.Equal(1, minimizedAutomaton.GoalStates.Count);
+            Assert.Equal(1, minimizedAutomaton.FinalStates.Count);
             Assert.True(minimizedAutomaton.IsValidWord("ababcbcbbaccbabbcabcabcabcababcabcbc"));
         }
 
@@ -485,7 +485,7 @@ namespace MatrixSolver.Computations.Tests.DataTypes.Automata
             automaton1.AddTransition(1, 1, 'a');
             automaton1.AddTransition(1, 1, 'b');
             automaton1.SetAsStartState(0);
-            automaton1.SetAsGoalState(1);
+            automaton1.SetAsFinalState(1);
             // L2 = language starts with 'a'
             var automaton2 = CreateEmptyAutomatonWithStates(3);
             automaton2.AddTransition(0, 1, 'a');
@@ -495,7 +495,7 @@ namespace MatrixSolver.Computations.Tests.DataTypes.Automata
             automaton2.AddTransition(2, 2, 'a');
             automaton2.AddTransition(2, 2, 'b');
             automaton2.SetAsStartState(0);
-            automaton2.SetAsGoalState(1);
+            automaton2.SetAsFinalState(1);
 
             // L3 = starts with a and contains a b
             var intersectedAutomaton = automaton1.IntersectionWithDFA(automaton2);
@@ -519,14 +519,14 @@ namespace MatrixSolver.Computations.Tests.DataTypes.Automata
             automaton1.AddTransition(1, 1, 'a');
             automaton1.AddTransition(1, 1, 'b');
             automaton1.SetAsStartState(0);
-            automaton1.SetAsGoalState(1);
+            automaton1.SetAsFinalState(1);
             // L2 = language starts with 'a'
             var automaton2 = CreateEmptyAutomatonWithStates(2);
             automaton2.AddTransition(0, 1, 'a');
             automaton2.AddTransition(1, 1, 'a');
             automaton2.AddTransition(1, 1, 'b');
             automaton2.SetAsStartState(0);
-            automaton2.SetAsGoalState(1);
+            automaton2.SetAsFinalState(1);
 
             // L3 = starts with a and contains a b
             var intersectedAutomaton = automaton1.IntersectionWithDFA(automaton2);
@@ -555,7 +555,7 @@ namespace MatrixSolver.Computations.Tests.DataTypes.Automata
         {
             var automaton = CreateEmptyAutomatonWithStates(4);
             automaton.SetAsStartState(0);
-            automaton.SetAsGoalState(3);
+            automaton.SetAsFinalState(3);
             // TODO: Add report section for these tests
             automaton.AddTransition(0, 1, 'a');
             automaton.AddTransition(1, 2, 'b');
@@ -568,7 +568,7 @@ namespace MatrixSolver.Computations.Tests.DataTypes.Automata
         {
             var automaton = CreateEmptyAutomatonWithStates(4);
             automaton.SetAsStartState(0);
-            automaton.SetAsGoalState(3);
+            automaton.SetAsFinalState(3);
             // TODO: Add report section for these tests
             automaton.AddTransition(0, 1, 'a');
             automaton.AddTransition(1, 2, 'b');
@@ -599,7 +599,7 @@ namespace MatrixSolver.Computations.Tests.DataTypes.Automata
             automaton.AddTransition(5, 7, Automaton.Epsilon);
 
             automaton.SetAsStartState(6);
-            automaton.SetAsGoalState(7);
+            automaton.SetAsFinalState(7);
 
             return automaton;
         }

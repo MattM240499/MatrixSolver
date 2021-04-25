@@ -28,9 +28,13 @@ namespace MatrixSolver.Computations.Tests.Maths
 
         [Theory]
         [InlineData(35, 14, 7, 1, -2)]
+        [InlineData(119, 42, 7, -1, 3)]
         [InlineData(2, 3, 1, -1, 1)]
         [InlineData(15, 5, 5, 0, 1)]
         [InlineData(-7, 8, 1, 1, 1)]
+        [InlineData(7, -8, 1, -1, -1)]
+        [InlineData(15, -9, 3, -1, -2)]
+        [InlineData(-15, 9, 3, 1, 2)]
         [InlineData(-16, -4, 4, 0, -1)]
         [InlineData(-12, -8, 4, -1, 1)]
         [InlineData(0, 7, 7, 0, 1)]
@@ -146,6 +150,9 @@ namespace MatrixSolver.Computations.Tests.Maths
         }
 
         [Theory]
+        [InlineData("RRSSR", "")]
+        [InlineData("RSSRR", "")]
+        [InlineData("SRRRS", "")]
         [InlineData("XXXXXXXXXXSSSSSSSSSSSSRRRRRRRRRRRR", "")]
         [InlineData("RRSRSRRRSRRSR", "X")]
         [InlineData("XRRSRRSRR", "XRRSRRSRR")]

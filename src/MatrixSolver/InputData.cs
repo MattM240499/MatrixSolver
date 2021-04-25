@@ -2,7 +2,7 @@
 using System;
 using Extreme.Mathematics;
 
-namespace MatrixSolver.Computations
+namespace MatrixSolver
 {
     /// <summary>
     /// Used to deserialise from a file the input data
