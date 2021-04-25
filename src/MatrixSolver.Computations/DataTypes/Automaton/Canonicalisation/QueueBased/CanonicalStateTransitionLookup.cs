@@ -76,13 +76,17 @@ namespace MatrixSolver.Computations.DataTypes.Automata.Canonicalisation
 
             var toAddTransitions = new List<Transition>();
 
-            Action<int, int, char, bool> addTransition = (fromState, toState, symbol, negated) =>
+            Action<int, int, char> addTransition = (fromState, toState, symbol) =>
             {
                 if (fromState == toState && symbol == Automaton.Epsilon)
                 {
                     return;
                 }
-                toAddTransitions.Add(new Transition(fromState, toState, symbol, negated));
+                if(!_automaton.AddTransition(fromState, toState, symbol))
+                {
+                    return;
+                }
+                toAddTransitions.Add(new Transition(fromState, toState, symbol));
             };
 
             // Adds an X or epsilon transition from a given state to another, based on an existing reachability status
@@ -90,11 +94,11 @@ namespace MatrixSolver.Computations.DataTypes.Automata.Canonicalisation
             {
                 if ((reachabilityStatus.EvenReachable && negated) || (reachabilityStatus.OddReachable && !negated))
                 {
-                    addTransition(fromState, toState, Constants.RegularLanguage.X, false);
+                    addTransition(fromState, toState, Constants.RegularLanguage.X);
                 }
                 if ((reachabilityStatus.OddReachable && negated) || (reachabilityStatus.EvenReachable && !negated))
                 {
-                    addTransition(fromState, toState, Automaton.Epsilon, false);
+                    addTransition(fromState, toState, Automaton.Epsilon);
                 }
             };
 
@@ -259,15 +263,14 @@ namespace MatrixSolver.Computations.DataTypes.Automata.Canonicalisation
                         // TODO: Potential optimisation: 
                         // We shouldn't need to add the state to the queue here as the state should already be consistent at this point,
                         // so we should just add the state to the automaton, so long as it doesn't go to itself.
-                        // Counter point: This seems like the wrong behaviour. Why are we collecting X chains?
                         foreach (var xChainStart in _incomingTransitionLookup[stateFrom].XEpsilonChains)
                         {
-                            addTransition(xChainStart, stateTo, Automaton.Epsilon, false);
+                            addTransition(xChainStart, stateTo, Automaton.Epsilon);
                         }
                         var xStates = _automaton.GetStatesReachableFromStateWithSymbol(stateTo, 'X', true, false);
                         foreach (var xState in xStates)
                         {
-                            addTransition(stateFrom, xState, Automaton.Epsilon, false);
+                            addTransition(stateFrom, xState, Automaton.Epsilon);
                         }
                     }
                     else
@@ -292,13 +295,19 @@ namespace MatrixSolver.Computations.DataTypes.Automata.Canonicalisation
                         // Combine with X on each side X
                         var incomingXEpsilonChains = _incomingTransitionLookup[stateFrom].XEpsilonChains;
                         var xStates = _automaton.GetStatesReachableFromStateWithSymbol(stateTo, 'X', true, false);
+
+                        var newTransitions = new List<(int from, int to)>();
                         foreach (var startXState in incomingXEpsilonChains)
                         {
                             foreach (var outgoingX in xStates)
                             {
                                 // Both X. Combine.
-                                addTransition(startXState, outgoingX, Automaton.Epsilon, false);
+                                newTransitions.Add((startXState, outgoingX));
                             }
+                        }
+                        foreach(var transition in newTransitions)
+                        {
+                            addTransition(transition.from, transition.to, Automaton.Epsilon);
                         }
                     }
 

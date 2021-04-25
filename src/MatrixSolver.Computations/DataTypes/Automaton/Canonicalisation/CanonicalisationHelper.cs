@@ -21,31 +21,16 @@ namespace MatrixSolver.Computations.DataTypes.Automata.Canonicalisation
 
         internal static Automaton PopulateDFAWithXAndEpsilonTransitions(this Automaton automaton)
         {
+            return automaton.PopulateDFAWithXAndEpsilonTransitionsQueueBased();
+        }
+
+        [Obsolete("Queue based approach is much faster.")]
+        internal static Automaton PopulateDFAWithXAndEpsilonTransitionsNaive(this Automaton automaton)
+        {
             bool changes = true;
             while (changes)
             {
-                changes = false;
-                // First, Look for XX and add epsilon transition where possible
-                foreach (var state in automaton.States)
-                {
-                    var states = automaton.GetStatesReachableFromStateWithSymbol(state, Constants.RegularLanguage.X, false);
-
-                    foreach (var xReachableState in states)
-                    {
-                        var epsilonStates = automaton.GetStatesReachableFromStateWithSymbol(xReachableState, Constants.RegularLanguage.X, false, false);
-                        foreach (var epsilonState in epsilonStates)
-                        {
-                            // Discard epsilon transition that loop back on the same state as they add no value
-                            if (state != epsilonState)
-                            {
-                                if (automaton.AddTransition(state, epsilonState, Automaton.Epsilon))
-                                {
-                                    changes = true;
-                                }
-                            }
-                        }
-                    }
-                }
+                changes = AddEpsilonStatesForXXSubPaths(automaton);
                 // Look for paths (RRR/SS)
                 foreach (var startState in automaton.States)
                 {
@@ -85,7 +70,6 @@ namespace MatrixSolver.Computations.DataTypes.Automata.Canonicalisation
         /// <summary>
         /// A queue based approach to performing the transition additions to the automaton.
         /// </summary>
-        /// <remark>Not used currently</remark>
         internal static Automaton PopulateDFAWithXAndEpsilonTransitionsQueueBased(this Automaton automaton)
         {
             var canonicalStateTransitionLookup = new CanonicalStateTransitionLookup(automaton);
@@ -97,25 +81,12 @@ namespace MatrixSolver.Computations.DataTypes.Automata.Canonicalisation
                     var toStates = automaton.TransitionMatrix.GetStates(state, symbol);
                     foreach (var toState in toStates)
                     {
-                        var transitions = canonicalStateTransitionLookup.AddTransition(state, symbol, toState);
-                        foreach (var transition in transitions)
-                        {
-                            transitionQueue.Enqueue(transition);
-                        }
+                        transitionQueue.Enqueue(new Transition(state, toState, symbol));
                     }
                 }
             }
             while (transitionQueue.TryDequeue(out var transition))
             {
-                if (transition.StateFrom == transition.StateTo && transition.Symbol == Automaton.Epsilon)
-                {
-                    continue;
-                }
-                if (!automaton.AddTransition(transition.StateFrom, transition.StateTo, transition.Symbol))
-                {
-                    continue;
-                }
-
                 var transitions = canonicalStateTransitionLookup.AddTransition(transition.StateFrom, transition.Symbol, transition.StateTo);
                 foreach (var newTransition in transitions)
                 {
@@ -151,14 +122,25 @@ namespace MatrixSolver.Computations.DataTypes.Automata.Canonicalisation
             bool changes = true;
             while (changes)
             {
-                changes = false;
-                foreach (var state in automaton.States)
+                changes = AddEpsilonStatesForXXSubPaths(automaton);
+            }
+            return automaton;
+        }
+
+        private static bool AddEpsilonStatesForXXSubPaths(Automaton automaton)
+        {
+            var changes = false;
+            foreach (var state in automaton.States)
+            {
+                var states = automaton.GetStatesReachableFromStateWithSymbol(state, Constants.RegularLanguage.X, false);
+
+                foreach (var xReachableState in states)
                 {
-                    var xStates = automaton.GetStatesReachableFromStateWithSymbol(state, Constants.RegularLanguage.X);
-                    foreach (var xState in xStates)
+                    var epsilonStates = automaton.GetStatesReachableFromStateWithSymbol(xReachableState, Constants.RegularLanguage.X, false, false);
+                    foreach (var epsilonState in epsilonStates)
                     {
-                        var epsilonStates = automaton.GetStatesReachableFromStateWithSymbol(xState, Constants.RegularLanguage.X, false);
-                        foreach (var epsilonState in epsilonStates)
+                        // Discard epsilon transition that loop back on the same state as they add no value
+                        if (state != epsilonState)
                         {
                             if (automaton.AddTransition(state, epsilonState, Automaton.Epsilon))
                             {
@@ -168,7 +150,7 @@ namespace MatrixSolver.Computations.DataTypes.Automata.Canonicalisation
                     }
                 }
             }
-            return automaton;
+            return changes;
         }
 
         private static IReadOnlyDictionary<int, ReachabilityStatus> ApplyXTransitionToReachabilityDictionary(
