@@ -24,7 +24,11 @@ namespace MatrixSolver.Computations.PerformanceTests
             PerformanceTestingUtility.AssertAutomatonEqual(automaton, automaton2);
 
             var sw = Stopwatch.StartNew();
+
+#pragma warning disable 612, 618
             var naivePopulatedAutomaton = automaton.PopulateDFAWithXAndEpsilonTransitionsNaive();
+#pragma warning restore 612, 618
+
             sw.Stop();
             var naiveTime = sw.ElapsedMilliseconds;
 
