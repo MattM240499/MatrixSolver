@@ -284,6 +284,10 @@ namespace MatrixSolver.Computations.DataTypes.Automata
         public Automaton IntersectionWithDFA(Automaton automaton)
         {
             // Check they have the same alphabet.
+            if(automaton.Alphabet.Count != this.Alphabet.Count)
+            {
+                throw new InvalidOperationException("Could not calculate the intersection as the alphabets were distinct");
+            }
             foreach (var symbol in automaton.Alphabet)
             {
                 if (!_alphabet.Contains(symbol))
