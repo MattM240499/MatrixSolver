@@ -27,6 +27,7 @@
             // If you have changed target frameworks, make sure to update the program path.
             "program": "${workspaceFolder}/tools/VectorReachabilitySolutionChecker/bin/Debug/netcoreapp3.1/VectorReachabilitySolutionChecker.dll",
             "args": [
+                "../../src/MatrixSolver/Examples/SimpleExamples/SimpleExample1.json",
                 "XSRRSRSRRSR"
             ],
             "cwd": "${workspaceFolder}/tools/VectorReachabilitySolutionChecker",
