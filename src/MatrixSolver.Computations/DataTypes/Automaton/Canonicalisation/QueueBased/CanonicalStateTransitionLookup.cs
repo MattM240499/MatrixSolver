@@ -317,7 +317,6 @@ namespace MatrixSolver.Computations.DataTypes.Automata.Canonicalisation
                     // updateTransitionSetLeft(_incomingTransitionLookup[stateFrom].EpsilonTransitions, (s) => s.EpsilonTransitions, !even);
                     updateTransitionSetEpsilon(stateTo, _incomingTransitionLookup[stateFrom].EpsilonTransitions, (s) => s.EpsilonTransitions, !even);
                     // Combine with X,S,R,RR from front side. We only do the front side as the rules we are checking are XX, SXS, RXRXR.
-                    // TODO: Review this.
                     foreach (var reachabilityLookup in _outgoingTransitionLookup[stateFrom].EpsilonTransitions)
                     {
                         if (reachabilityLookup.Value.EvenReachable)

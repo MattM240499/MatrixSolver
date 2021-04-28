@@ -99,8 +99,8 @@ namespace MatrixSolver.Computations
         private static void ValidateVRPVectors(ImmutableVector2D vectorX, ImmutableVector2D vectorY, out BigRational scalar)
         {
             // Validate vectors
-            ValidateVectorIsInteger(vectorX);
-            ValidateVectorIsInteger(vectorY);
+            ValidateVectorIsNonZeroAndInteger(vectorX, "x");
+            ValidateVectorIsNonZeroAndInteger(vectorY, "y");
             var xGcd = MathematicalHelper.GCD(vectorX.UnderlyingVector[0].Numerator, vectorX.UnderlyingVector[1].Numerator);
             var yGcd = MathematicalHelper.GCD(vectorY.UnderlyingVector[0].Numerator, vectorY.UnderlyingVector[1].Numerator);
             if (xGcd != yGcd)
@@ -111,11 +111,15 @@ namespace MatrixSolver.Computations
             scalar = new BigRational(1, xGcd);
         }
 
-        private static void ValidateVectorIsInteger(ImmutableVector2D vector)
+        private static void ValidateVectorIsNonZeroAndInteger(ImmutableVector2D vector, string vectorName)
         {
             if (vector.UnderlyingVector.Any(e => !e.IsInteger()))
             {
-                throw new ArgumentException("Vector had a non integer element.");
+                throw new ArgumentException($"Vector {vectorName} had a non integer element.");
+            }
+            if(vector.UnderlyingVector[0] == 0 && vector.UnderlyingVector[1] == 0)
+            {
+                throw new ArgumentException($"Vector {vectorName} was equal to zero");
             }
         }
 

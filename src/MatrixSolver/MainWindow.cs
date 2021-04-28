@@ -76,7 +76,7 @@ namespace MatrixSolver
         }
 
 
-        public void CreateAndLayoutAndDisplayGraph(object sender, ExecutedRoutedEventArgs ex)
+        private void CreateAndLayoutAndDisplayGraph(object sender, ExecutedRoutedEventArgs ex)
         {
             var alphabetAndEpsilon = _automaton.Alphabet.Append(Automaton.Epsilon);
             try
@@ -84,6 +84,7 @@ namespace MatrixSolver
                 Graph graph = new Graph();
 
                 var vertexLookup = new Dictionary<int, string>();
+                // Add states
                 foreach (var state in _automaton.States)
                 {
                     var stateId = $"S{state}";
@@ -105,6 +106,7 @@ namespace MatrixSolver
                     vertexLookup[state] = stateId;
                     graph.AddNode(node);
                 }
+                // Add transitions
                 foreach (var state in _automaton.States)
                 {
                     var reachableStatesLookup = new Dictionary<int, List<char>>();

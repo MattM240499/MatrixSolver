@@ -18,11 +18,12 @@ namespace MatrixSolver.Computations.PerformanceTests
         [Fact(Skip="Performance test")]
         public void Minimize_PerformanceTests()
         {
-            var automaton = PerformanceTestingUtility.CreateLargeAutomataWithRandomTransitions(_alphabet);
+            var automaton = PerformanceTestingUtility.CreateLargeAutomataWithRandomTransitions(_alphabet, 10000);
             var sw = Stopwatch.StartNew();
             var minimizedAutomaton = automaton.MinimizeDFA();
             sw.Stop();
-            _output.WriteLine($"EquivalenceMethod: {sw.ElapsedMilliseconds}ms");
+            _output.WriteLine($"Minimization performed in {sw.ElapsedMilliseconds}ms");
+            _output.WriteLine($"The minized automaton had {minimizedAutomaton.States.Count} states");
         }
     }
 }

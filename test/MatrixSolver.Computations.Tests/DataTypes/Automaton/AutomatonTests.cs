@@ -556,7 +556,6 @@ namespace MatrixSolver.Computations.Tests.DataTypes.Automata
             var automaton = CreateEmptyAutomatonWithStates(4);
             automaton.SetAsStartState(0);
             automaton.SetAsFinalState(3);
-            // TODO: Add report section for these tests
             automaton.AddTransition(0, 1, 'a');
             automaton.AddTransition(1, 2, 'b');
             automaton.AddTransition(2, 3, 'c');
@@ -569,7 +568,6 @@ namespace MatrixSolver.Computations.Tests.DataTypes.Automata
             var automaton = CreateEmptyAutomatonWithStates(4);
             automaton.SetAsStartState(0);
             automaton.SetAsFinalState(3);
-            // TODO: Add report section for these tests
             automaton.AddTransition(0, 1, 'a');
             automaton.AddTransition(1, 2, 'b');
             automaton.AddTransition(2, 1, 'c');
@@ -584,7 +582,6 @@ namespace MatrixSolver.Computations.Tests.DataTypes.Automata
         private Automaton CreateNFA2()
         {
             var automaton = CreateEmptyAutomatonWithStates(8);
-            // TODO: Add report section for these tests
             // Union
             automaton.AddTransition(0, 2, Automaton.Epsilon);
             automaton.AddTransition(0, 1, Automaton.Epsilon);

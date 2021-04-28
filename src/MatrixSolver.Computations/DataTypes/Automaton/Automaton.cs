@@ -20,7 +20,7 @@ namespace MatrixSolver.Computations.DataTypes.Automata
         private readonly HashSet<int> _states;
         /// <summary>An adjacency matrix of transition states</summary>
         private readonly TransitionMatrix<char> _transitionMatrix;
-        private readonly SortedSet<char> _alphabet;
+        private readonly char[] _alphabet;
         private int _statesIdCounter;
         /// <summary>
         /// The Transition Matrix representing all possible paths between states
@@ -29,25 +29,25 @@ namespace MatrixSolver.Computations.DataTypes.Automata
         public IReadOnlyCollection<int> States => _states;
         public IReadOnlyCollection<int> StartStates => _startStates;
         public IReadOnlyCollection<int> FinalStates => _finalStates;
-        public IReadOnlyCollection<char> Alphabet => _alphabet;
+        public IReadOnlyList<char> Alphabet => _alphabet;
         public const char Epsilon = 'Ɛ';
 
-        public Automaton(IReadOnlyCollection<char> alphabet)
+        public Automaton(char[] alphabet)
         {
             _states = new HashSet<int>();
             _startStates = new HashSet<int>();
             _finalStates = new HashSet<int>();
             _transitionMatrix = new TransitionMatrix<char>();
-            _alphabet = new SortedSet<char>(alphabet);
+            _alphabet = alphabet.ToArray();
         }
 
-        private Automaton(HashSet<int> states, HashSet<int> startStates, HashSet<int> finalStates, TransitionMatrix<char> transitionMatrix, SortedSet<char> alphabet)
+        private Automaton(HashSet<int> states, HashSet<int> startStates, HashSet<int> finalStates, TransitionMatrix<char> transitionMatrix, char[] alphabet)
         {
             _states = states;
             _startStates = startStates;
             _finalStates = finalStates;
             _transitionMatrix = transitionMatrix;
-            _alphabet = alphabet;
+            _alphabet = alphabet.ToArray();
         }
 
         /// <summary>
@@ -205,11 +205,11 @@ namespace MatrixSolver.Computations.DataTypes.Automata
                 }
             }
             // Finally add the epsilon states again.
-            if(useEpsilonStatesAtEnd)
+            if (useEpsilonStatesAtEnd)
             {
                 AddEpsilonStates(symbolStates);
             }
-            
+
             return symbolStates;
         }
 
@@ -219,7 +219,7 @@ namespace MatrixSolver.Computations.DataTypes.Automata
         public Automaton ToDFA()
         {
             // A list of states. Each list will become a new state
-            var automaton = new Automaton(Alphabet);
+            var automaton = new Automaton(_alphabet);
             var newAutomatonStates = new Dictionary<HashSet<int>, int>(HashSet<int>.CreateSetComparer());
             var stateQueue = new Queue<HashSet<int>>();
 
@@ -284,7 +284,7 @@ namespace MatrixSolver.Computations.DataTypes.Automata
         public Automaton IntersectionWithDFA(Automaton automaton)
         {
             // Check they have the same alphabet.
-            if(automaton.Alphabet.Count != this.Alphabet.Count)
+            if (automaton.Alphabet.Count != this.Alphabet.Count)
             {
                 throw new InvalidOperationException("Could not calculate the intersection as the alphabets were distinct");
             }
@@ -349,46 +349,46 @@ namespace MatrixSolver.Computations.DataTypes.Automata
         /// </summary>
         public Automaton MinimizeDFA(bool validateDfa = true)
         {
-            if(validateDfa && !IsDFA(out string error))
+            if (validateDfa && !IsDFA(out string error))
             {
                 throw new InvalidOperationException(error);
             }
-            
+
             // Perform the minimization calculation
-            var equivalenceTree = new EquivalenceTree(this);
-            equivalenceTree.SeperateEquivalencesIntoBranches();
+            var equivalenceFinder = new EquivalenceFinder(this);
+            equivalenceFinder.SeperateBlocksIntoEquivalences();
             // Create the new Automaton
             var newAutomaton = new Automaton(_alphabet);
             var newAutomatonStateLookup = new Dictionary<LinkedList<int>, int>();
             var equivalenceSetQueue = new Queue<LinkedList<int>>();
             // Add the start state to the automaton.
-            var equivalenceStateSet = equivalenceTree.EquivalenceLookup[StartStates.First()].States;
+            var equivalenceStateSet = equivalenceFinder.BlockLookup[StartStates.First()].States;
             newAutomatonStateLookup[equivalenceStateSet] = newAutomaton.AddState(isStartState: true, isFinalState: FinalStates.Contains(equivalenceStateSet.First!.Value));
             equivalenceSetQueue.Enqueue(equivalenceStateSet);
 
-            while(equivalenceSetQueue.TryDequeue(out var equivalenceSet))
+            while (equivalenceSetQueue.TryDequeue(out var equivalenceSet))
             {
                 // Pick any state in the equivalence. Each equivalence must have atleast 1 state.
                 var stateFrom = equivalenceSet.First!.Value;
-                
+
                 foreach (var symbol in _alphabet)
                 {
                     var states = TransitionMatrix.GetStates(stateFrom, symbol);
                     if (states.Count != 0)
                     {
                         var stateTo = states.First();
-                        var stateToEquivalence = equivalenceTree.EquivalenceLookup[stateTo].States;
+                        var stateToEquivalence = equivalenceFinder.BlockLookup[stateTo].States;
                         // -1 Indicates the state where each transition goes to a dead end. Ignore transitions that lead here, because the definition of DFA used in this project
                         // is that where a state has at most one transition.
-                        if(stateToEquivalence.First!.Value == -1)
+                        if (stateToEquivalence.First!.Value == -1)
                         {
                             continue;
                         }
-                        if(!newAutomatonStateLookup.TryGetValue(stateToEquivalence, out var newAutomatonStateTo))
+                        if (!newAutomatonStateLookup.TryGetValue(stateToEquivalence, out var newAutomatonStateTo))
                         {
-                            // State is unknown. Add it to the automaton, and the state queue.
+                            // State is unknown. Add it to the automaton and the state queue.
                             newAutomatonStateTo = newAutomaton.AddState(isStartState: false, isFinalState: FinalStates.Contains(stateTo));
-                            var equivalenceSetTo = equivalenceTree.EquivalenceLookup[stateTo].States;
+                            var equivalenceSetTo = equivalenceFinder.BlockLookup[stateTo].States;
                             equivalenceSetQueue.Enqueue(equivalenceSetTo);
                             newAutomatonStateLookup[equivalenceSetTo] = newAutomatonStateTo;
                         }
@@ -396,7 +396,7 @@ namespace MatrixSolver.Computations.DataTypes.Automata
                     }
                 }
             }
-            
+
             return newAutomaton;
         }
 
@@ -406,29 +406,29 @@ namespace MatrixSolver.Computations.DataTypes.Automata
         public bool IsDFA(out string error)
         {
             // Validate automaton is a DFA
-            error  = "";
-            if(StartStates.Count != 1)
+            error = "";
+            if (StartStates.Count != 1)
             {
                 error = $"Automaton should contain exactly 1 start state but contained {StartStates.Count}, thus is not DFA, and therefore minimization cannot be performed.";
                 return false;
             }
-            foreach(var state in States)
+            foreach (var state in States)
             {
-                foreach(var symbol in _alphabet)
+                foreach (var symbol in _alphabet)
                 {
-                    if(TransitionMatrix.GetStates(state, symbol).Count > 1)
+                    if (TransitionMatrix.GetStates(state, symbol).Count > 1)
                     {
                         error = $"Automaton contains multiple transition from state {state} with symbol {symbol}, thus is not a DFA" +
                             ", and therefore minimization cannot be performed.";
                     }
                 }
-                if(TransitionMatrix.GetStates(state, Automaton.Epsilon).Count != 0)
+                if (TransitionMatrix.GetStates(state, Automaton.Epsilon).Count != 0)
                 {
                     error = $"Automaton contains an epsilon transition from state {state}, thus is not a DFA" +
                         ", and therefore minimization cannot be performed.";
                 }
             }
-            if(error != "")
+            if (error != "")
             {
                 return false;
             }
@@ -458,8 +458,8 @@ namespace MatrixSolver.Computations.DataTypes.Automata
 
         public Automaton Clone()
         {
-            return new Automaton(new HashSet<int>(_states), new HashSet<int>(_startStates), 
-                new HashSet<int>(_finalStates), _transitionMatrix.Clone(), new SortedSet<char>(_alphabet));
+            return new Automaton(new HashSet<int>(_states), new HashSet<int>(_startStates),
+                new HashSet<int>(_finalStates), _transitionMatrix.Clone(), _alphabet.ToArray());
         }
     }
 
