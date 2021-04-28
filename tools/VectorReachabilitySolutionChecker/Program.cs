@@ -24,6 +24,7 @@ namespace VectorReachabilitySolutionChecker
             if(args.Length < 2)
             {
                 Console.WriteLine("No argument received for string. String assumed to be the empty string.");
+                inputFile = args[0];
                 matrixProduct = "";
             }
             else
