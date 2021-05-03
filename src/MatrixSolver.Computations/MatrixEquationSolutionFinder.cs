@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Linq;
 using Extreme.Mathematics;
 using MatrixSolver.Computations.DataTypes;
@@ -19,24 +20,24 @@ namespace MatrixSolver.Computations
         {
             // Validate input data
             ValidateMatrixList(matrices);
-            string matrixProductRegex = GetMatrixSemigroupRegex(matrices);
-            return SolveGeneralisedVectorReachabilityProblem(matrixProductRegex, vectorX, vectorY);
+            string matrixProductRegex = TimedFunction(() => GetMatrixSemigroupRegex(matrices), "Calculate Lsemigr regex");
+            return SolveGeneralisedVectorReachabilityProblem(matrixProductRegex, "Lsemigr", vectorX, vectorY);
         }
 
-        public static Automaton SolveGeneralisedVectorReachabilityProblem(string languageRegex, ImmutableVector2D vectorX, ImmutableVector2D vectorY)
+        public static Automaton SolveGeneralisedVectorReachabilityProblem(string languageRegex, string languageName, ImmutableVector2D vectorX, ImmutableVector2D vectorY)
         {
-            string matrixSolutionRegex = GetVectorReachabilityProblemRegex(vectorX, vectorY);
-            Console.WriteLine($"Solutions of Mx = y as a regex are of the form: {matrixSolutionRegex}");
-            Console.WriteLine($"Solution intersected with language represented by: {languageRegex}");
+            string matrixSolutionRegex = TimedFunction(() => GetVectorReachabilityProblemRegex(vectorX, vectorY), "Calculate Lvrp regex");
+            Console.WriteLine($"Solutions of Mx = y as a regex are of the form:  Lvrp = {matrixSolutionRegex}");
+            Console.WriteLine($"Solution intersected with language: {languageName} = {languageRegex}");
 
-            var matrixSolutionAsCanonicalDfa = RegularLanguageRegexToCanonicalWordAcceptingDfa(matrixSolutionRegex);
-            var languageAsCanonicalDfa = RegularLanguageRegexToCanonicalWordAcceptingDfa(languageRegex);
+            var matrixSolutionAsCanonicalDfa = RegularLanguageRegexToCanonicalWordAcceptingDfa(matrixSolutionRegex, "Lvrp");
+            var languageAsCanonicalDfa = RegularLanguageRegexToCanonicalWordAcceptingDfa(languageRegex, "Lsemigr");
 
-            var intersectedDFA = Constants.Automaton.Canonical
+            var intersectedDFA = TimedFunction(() => Constants.Automaton.Canonical
                 .IntersectionWithDFA(matrixSolutionAsCanonicalDfa)
-                .IntersectionWithDFA(languageAsCanonicalDfa)
+                .IntersectionWithDFA(languageAsCanonicalDfa), $"Intersection of Lcan, Lvrp, {languageName}")
                 ;
-            var minimizedDfa = intersectedDFA.MinimizeDFA();
+            var minimizedDfa = TimedFunction(() => intersectedDFA.MinimizeDFA(), "DFA minimization");
 
             return minimizedDfa;
         }
@@ -71,7 +72,7 @@ namespace MatrixSolver.Computations
             return matrixSolutionRegex;
         }
 
-            // Console.WriteLine($"General solution is of the form: {Ay} * {Constants.Matrices.T}^t * {AxInverse}");
+        // Console.WriteLine($"General solution is of the form: {Ay} * {Constants.Matrices.T}^t * {AxInverse}");
         private static ImmutableMatrix2x2 CalculateMatrixA(ImmutableVector2D vector)
         {
             var euclideanAlgorithmValues = MathematicalHelper.ExtendedEuclideanAlgorithm(vector.UnderlyingVector[0].Numerator, vector.UnderlyingVector[1].Numerator);
@@ -117,22 +118,36 @@ namespace MatrixSolver.Computations
             {
                 throw new ArgumentException($"Vector {vectorName} had a non integer element.");
             }
-            if(vector.UnderlyingVector[0] == 0 && vector.UnderlyingVector[1] == 0)
+            if (vector.UnderlyingVector[0] == 0 && vector.UnderlyingVector[1] == 0)
             {
                 throw new ArgumentException($"Vector {vectorName} was equal to zero");
             }
         }
 
-        internal static Automaton RegularLanguageRegexToCanonicalWordAcceptingDfa(string regex)
+        internal static Automaton RegularLanguageRegexToCanonicalWordAcceptingDfa(string regex, string regexName = "")
         {
-            return AutomatonUtil
-                .RegexToAutomaton(regex, Constants.RegularLanguage.Symbols)
-                // It isn't required to convert to DFA, but as it is an inexpensive operation for the automaton created via the thompson construction, 
-                // it probably will end up saving time overall by reducing the time on the other steps.
-                .ToDFA()
-                .UpdateAutomatonToAcceptCanonicalWords()
-                .ToDFA()
-                ;
+            // It isn't required to convert to DFA, but as it is an inexpensive operation for the automaton created via the thompson construction, 
+            // it probably will end up saving time overall by reducing the time on the other steps.
+
+            var sw = Stopwatch.StartNew();
+            var automaton = TimedFunction(() => AutomatonUtil.RegexToAutomaton(regex, Constants.RegularLanguage.Symbols),
+                $"Regex to Thompson NFA for regex {regexName}");
+            automaton = TimedFunction(() => automaton.ToDFA(),
+                $"Thompson NFA to DFA for regex {regexName}");
+            TimedFunction(() => automaton.UpdateAutomatonToAcceptCanonicalWords(),
+                $"Canonicalisation of DFA for regex {regexName}");
+            automaton = TimedFunction(() => automaton.ToDFA(),
+                $"Canonicalised NFA to DFA for regex {regexName}");
+            return automaton;
+        }
+
+        private static T TimedFunction<T>(Func<T> func, string functionDescription)
+        {
+            var sw = Stopwatch.StartNew();
+            var t = func();
+            sw.Stop();
+            Console.WriteLine($"{functionDescription} completed in {sw.ElapsedMilliseconds}ms");
+            return t;
         }
     }
 }

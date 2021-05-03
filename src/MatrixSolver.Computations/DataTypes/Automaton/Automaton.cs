@@ -81,11 +81,11 @@ namespace MatrixSolver.Computations.DataTypes.Automata
             {
                 throw new InvalidOperationException($"Symbol {symbol} was not in alphabet: {String.Join(',', _alphabet)}");
             }
-            if (!_states.TryGetValue(fromcurrentStateId, out var fromState))
+            if (!_states.Contains(fromcurrentStateId))
             {
                 throw new InvalidOperationException($"State with id {fromcurrentStateId} does not exist");
             }
-            if (!_states.TryGetValue(tocurrentStateId, out var toState))
+            if (!_states.Contains(tocurrentStateId))
             {
                 throw new InvalidOperationException($"State with id {tocurrentStateId} does not exist");
             }
