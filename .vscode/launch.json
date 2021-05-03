@@ -12,7 +12,7 @@
             // If you have changed target frameworks, make sure to update the program path.
             "program": "${workspaceFolder}/src/MatrixSolver/bin/Debug/netcoreapp3.1/MatrixSolver.dll",
             "args": [
-                "MatrixSolver/Examples/SimpleExamples/SimpleExample1.json"
+                "MatrixSolver/Examples/StressTest/Matrix500.json",
             ],
             "cwd": "${workspaceFolder}/src",
             // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console
@@ -31,6 +31,21 @@
                 "XSRRSRSRRSR"
             ],
             "cwd": "${workspaceFolder}/tools/VectorReachabilitySolutionChecker",
+            // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console
+            "console": "internalConsole",
+            "stopAtEntry": false
+        },
+        {
+            "name": "Word to matrix calculator",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            // If you have changed target frameworks, make sure to update the program path.
+            "program": "${workspaceFolder}/tools/CalculateManyMatricesFromWords/bin/Debug/netcoreapp3.1/CalculateManyMatricesFromWords.dll",
+            "args": [
+                "./ExampleWords.txt",
+            ],
+            "cwd": "${workspaceFolder}/tools/CalculateManyMatricesFromWords",
             // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console
             "console": "internalConsole",
             "stopAtEntry": false
