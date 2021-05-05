@@ -359,17 +359,17 @@ namespace MatrixSolver.Computations.DataTypes.Automata
             equivalenceFinder.SeperateBlocksIntoEquivalences();
             // Create the new Automaton
             var newAutomaton = new Automaton(_alphabet);
-            var newAutomatonStateLookup = new Dictionary<LinkedList<int>, int>();
-            var equivalenceSetQueue = new Queue<LinkedList<int>>();
+            var newAutomatonStateLookup = new Dictionary<Block, int>();
+            var blockSetQueue = new Queue<Block>();
             // Add the start state to the automaton.
-            var equivalenceStateSet = equivalenceFinder.BlockLookup[StartStates.First()].States;
-            newAutomatonStateLookup[equivalenceStateSet] = newAutomaton.AddState(isStartState: true, isFinalState: FinalStates.Contains(equivalenceStateSet.First!.Value));
-            equivalenceSetQueue.Enqueue(equivalenceStateSet);
+            var blockStateSet = equivalenceFinder.BlockLookup[StartStates.First()];
+            newAutomatonStateLookup[blockStateSet] = newAutomaton.AddState(isStartState: true, isFinalState: FinalStates.Contains(blockStateSet.States.First!.Value));
+            blockSetQueue.Enqueue(blockStateSet);
 
-            while (equivalenceSetQueue.TryDequeue(out var equivalenceSet))
+            while (blockSetQueue.TryDequeue(out var equivalenceSet))
             {
                 // Pick any state in the equivalence. Each equivalence must have atleast 1 state.
-                var stateFrom = equivalenceSet.First!.Value;
+                var stateFrom = equivalenceSet.States.First!.Value;
 
                 foreach (var symbol in _alphabet)
                 {
@@ -377,19 +377,19 @@ namespace MatrixSolver.Computations.DataTypes.Automata
                     if (states.Count != 0)
                     {
                         var stateTo = states.First();
-                        var stateToEquivalence = equivalenceFinder.BlockLookup[stateTo].States;
-                        // -1 Indicates the state where each transition goes to a dead end. Ignore transitions that lead here, because the definition of DFA used in this project
-                        // is that where a state has at most one transition.
-                        if (stateToEquivalence.First!.Value == -1)
+                        var stateToBlock = equivalenceFinder.BlockLookup[stateTo];
+                        // -1 Indicates the state where each transition goes to a sink state. Ignore transitions that lead here, 
+                        // because the sink state should be emitted for the transition matrix.
+                        if (stateToBlock.States.First!.Value == -1)
                         {
                             continue;
                         }
-                        if (!newAutomatonStateLookup.TryGetValue(stateToEquivalence, out var newAutomatonStateTo))
+                        if (!newAutomatonStateLookup.TryGetValue(stateToBlock, out var newAutomatonStateTo))
                         {
                             // State is unknown. Add it to the automaton and the state queue.
                             newAutomatonStateTo = newAutomaton.AddState(isStartState: false, isFinalState: FinalStates.Contains(stateTo));
-                            var equivalenceSetTo = equivalenceFinder.BlockLookup[stateTo].States;
-                            equivalenceSetQueue.Enqueue(equivalenceSetTo);
+                            var equivalenceSetTo = equivalenceFinder.BlockLookup[stateTo];
+                            blockSetQueue.Enqueue(equivalenceSetTo);
                             newAutomatonStateLookup[equivalenceSetTo] = newAutomatonStateTo;
                         }
                         newAutomaton.AddTransition(newAutomatonStateLookup[equivalenceSet], newAutomatonStateTo, symbol);

@@ -72,7 +72,6 @@ namespace MatrixSolver.Computations
             return matrixSolutionRegex;
         }
 
-        // Console.WriteLine($"General solution is of the form: {Ay} * {Constants.Matrices.T}^t * {AxInverse}");
         private static ImmutableMatrix2x2 CalculateMatrixA(ImmutableVector2D vector)
         {
             var euclideanAlgorithmValues = MathematicalHelper.ExtendedEuclideanAlgorithm(vector.UnderlyingVector[0].Numerator, vector.UnderlyingVector[1].Numerator);

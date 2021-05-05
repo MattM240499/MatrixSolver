@@ -71,22 +71,22 @@ namespace MatrixSolver.Computations
 
                 GeneratorMatrixIdentifierLookup = new Dictionary<GeneratorMatrixIdentifier, GeneratorMatrixIdentifier[]>
                 {
-                    [GeneratorMatrixIdentifier.T] = new GeneratorMatrixIdentifier[] 
-                        { 
-                            GeneratorMatrixIdentifier.X, 
-                            GeneratorMatrixIdentifier.S, 
-                            GeneratorMatrixIdentifier.R 
-                        },
-                    [GeneratorMatrixIdentifier.TInverse] = new GeneratorMatrixIdentifier[] 
+                    [GeneratorMatrixIdentifier.T] = new GeneratorMatrixIdentifier[]
                         {
-                            GeneratorMatrixIdentifier.X, 
-                            GeneratorMatrixIdentifier.R, 
-                            GeneratorMatrixIdentifier.R, 
-                            GeneratorMatrixIdentifier.S 
+                            GeneratorMatrixIdentifier.X,
+                            GeneratorMatrixIdentifier.S,
+                            GeneratorMatrixIdentifier.R
+                        },
+                    [GeneratorMatrixIdentifier.TInverse] = new GeneratorMatrixIdentifier[]
+                        {
+                            GeneratorMatrixIdentifier.X,
+                            GeneratorMatrixIdentifier.R,
+                            GeneratorMatrixIdentifier.R,
+                            GeneratorMatrixIdentifier.S
                         },
                     [GeneratorMatrixIdentifier.SInverse] = new GeneratorMatrixIdentifier[]
-                        { 
-                            GeneratorMatrixIdentifier.X, 
+                        {
+                            GeneratorMatrixIdentifier.X,
                             GeneratorMatrixIdentifier.S
                         }
                 };
@@ -127,17 +127,17 @@ namespace MatrixSolver.Computations
                     (4,2, RegularLanguage.S),
 
                 };
-                for(int i = 0; i <5; i++)
+                for (int i = 0; i < 5; i++)
                 {
                     var state = Canonical.AddState();
                     Canonical.SetAsFinalState(state);
                     stateIdLookup[i] = state;
                 }
                 Canonical.SetAsStartState(stateIdLookup[0]);
-                
-                foreach(var transition in transitions)
+
+                foreach (var transition in transitions)
                 {
-                    Canonical.AddTransition(stateIdLookup[transition.Item1],stateIdLookup[transition.Item2], transition.Item3);
+                    Canonical.AddTransition(stateIdLookup[transition.Item1], stateIdLookup[transition.Item2], transition.Item3);
                 }
             }
         }

@@ -13,6 +13,7 @@ namespace MatrixSolver.Computations.Tests.DataTypes.Automata
         [Theory]
         [InlineData("a*b*c*", "a*b*?c*?")]
         [InlineData("abb*|abb(a*b*)*|b", "ab?b*?ab?b?a*b*?*?|b|")]
+        [InlineData("(ab)(ba)", "ab?ba??")]
         public void RegexToPostFix_ConvertsCorrectly(string infixRegex, string expectedPostfix)
         {
             Assert.Equal(expectedPostfix, String.Join("", AutomatonUtil.RegexToPostfix(infixRegex)));
