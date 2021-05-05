@@ -15,7 +15,7 @@ namespace MatrixSolver.Computations.PerformanceTests
             _output = output;
         }
 
-        [Fact(Skip="Performance test")]
+        [Fact]
         public void Minimize_PerformanceTests()
         {
             var automaton = PerformanceTestingUtility.CreateLargeAutomataWithRandomTransitions(_alphabet, 10000);
