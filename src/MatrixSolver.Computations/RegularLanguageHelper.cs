@@ -6,7 +6,7 @@ namespace MatrixSolver.Computations
 {
     public static class RegularLanguageHelper
     {
-        public static Dictionary<char, ImmutableMatrix2x2> MatrixLookup;
+        public static readonly Dictionary<char, ImmutableMatrix2x2> MatrixLookup;
 
         static RegularLanguageHelper()
         {
@@ -36,7 +36,7 @@ namespace MatrixSolver.Computations
             var workingMatrix = Constants.Matrices.I;
             foreach (var matrixIdentifier in matrixProduct)
             {
-                var nextMatrix = RegularLanguageHelper.MatrixLookup[matrixIdentifier];
+                var nextMatrix = MatrixLookup[matrixIdentifier];
                 workingMatrix = workingMatrix * nextMatrix;
             }
             return workingMatrix;

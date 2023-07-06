@@ -1,8 +1,6 @@
-
-using System;
 using Extreme.Mathematics;
 
-namespace MatrixSolver.Computations.Maths.Extensions
+namespace MatrixSolver.Computations.Maths
 {
     /// <summary>
     /// Provides extensions for the <see cref="Extreme.Mathematics" /> Assembly

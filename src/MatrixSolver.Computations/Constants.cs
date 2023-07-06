@@ -61,30 +61,30 @@ namespace MatrixSolver.Computations
 
                 MatrixIdentifierDictionary = new Dictionary<GeneratorMatrixIdentifier, ImmutableMatrix2x2>
                 {
-                    [GeneratorMatrixIdentifier.T] = Constants.Matrices.T,
-                    [GeneratorMatrixIdentifier.S] = Constants.Matrices.S,
-                    [GeneratorMatrixIdentifier.R] = Constants.Matrices.R,
-                    [GeneratorMatrixIdentifier.X] = Constants.Matrices.X,
-                    [GeneratorMatrixIdentifier.SInverse] = Constants.Matrices.S.Inverse(), // Or -S
-                    [GeneratorMatrixIdentifier.TInverse] = Constants.Matrices.T.Inverse()
+                    [GeneratorMatrixIdentifier.T] = T,
+                    [GeneratorMatrixIdentifier.S] = S,
+                    [GeneratorMatrixIdentifier.R] = R,
+                    [GeneratorMatrixIdentifier.X] = X,
+                    [GeneratorMatrixIdentifier.SInverse] = S.Inverse(), // Or -S
+                    [GeneratorMatrixIdentifier.TInverse] = T.Inverse()
                 };
 
                 GeneratorMatrixIdentifierLookup = new Dictionary<GeneratorMatrixIdentifier, GeneratorMatrixIdentifier[]>
                 {
-                    [GeneratorMatrixIdentifier.T] = new GeneratorMatrixIdentifier[]
+                    [GeneratorMatrixIdentifier.T] = new []
                         {
                             GeneratorMatrixIdentifier.X,
                             GeneratorMatrixIdentifier.S,
                             GeneratorMatrixIdentifier.R
                         },
-                    [GeneratorMatrixIdentifier.TInverse] = new GeneratorMatrixIdentifier[]
+                    [GeneratorMatrixIdentifier.TInverse] = new []
                         {
                             GeneratorMatrixIdentifier.X,
                             GeneratorMatrixIdentifier.R,
                             GeneratorMatrixIdentifier.R,
                             GeneratorMatrixIdentifier.S
                         },
-                    [GeneratorMatrixIdentifier.SInverse] = new GeneratorMatrixIdentifier[]
+                    [GeneratorMatrixIdentifier.SInverse] = new []
                         {
                             GeneratorMatrixIdentifier.X,
                             GeneratorMatrixIdentifier.S
@@ -98,7 +98,7 @@ namespace MatrixSolver.Computations
             public const char X = 'X';
             public const char S = 'S';
             public const char R = 'R';
-            public static char[] Symbols = new char[] { X, S, R };
+            public static readonly char[] Symbols = { X, S, R };
         }
 
         public static class Automaton
