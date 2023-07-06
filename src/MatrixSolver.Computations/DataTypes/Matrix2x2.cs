@@ -34,7 +34,7 @@ namespace MatrixSolver.Computations.DataTypes
         }
 
         /// <summary>
-        /// Returns a new <see cref="Matrix2x2" /> which is the product of this and another <see cref="Matrix2x2" /> to the left.
+        /// Updates the current matrix with the product of this and another <see cref="Matrix2x2" /> to the left.
         /// </summary>
         public Matrix2x2 MultiplyLeft(IMatrix2x2 left)
         {
@@ -43,7 +43,7 @@ namespace MatrixSolver.Computations.DataTypes
         }
 
         /// <summary>
-        /// Returns a new <see cref="Matrix2x2" /> which is the product of this and another <see cref="Matrix2x2" /> to the right.
+        /// Updates the current matrix with the product of this and another <see cref="Matrix2x2" /> to the right.
         /// </summary>
         public Matrix2x2 MultiplyRight(IMatrix2x2 right)
         {
@@ -61,19 +61,13 @@ namespace MatrixSolver.Computations.DataTypes
         }
 
         /// <summary>
-        /// Calculates the Inverse of the matrix. 
+        /// Updates the current matrix with the inverse of this matrix. 
         /// Throws if the matrix has determinant zero.
         /// </summary>
-        /// <returns>A new <see cref="Matrix2x2"/> representing the result of the computation</returns>
         public Matrix2x2 Inverse()
         {
             _underlyingValues.Update(base.InverseBase());
             return this;
-        }
-
-        public static Matrix2x2 operator *(Matrix2x2 left, IMatrix2x2 right)
-        {
-            return left.MultiplyRight(right);
         }
 
         public static ImmutableVector2D operator *(Matrix2x2 left, ImmutableVector2D right)

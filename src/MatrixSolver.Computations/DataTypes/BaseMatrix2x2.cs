@@ -60,7 +60,7 @@ namespace MatrixSolver.Computations.DataTypes
                 BigRational value = 0;
                 for (int columnIndex = 0; columnIndex < Order; columnIndex++)
                 {
-                    value += this.UnderlyingValues[rowIndex, columnIndex] * right.UnderlyingVector[columnIndex];
+                    value += UnderlyingValues[rowIndex, columnIndex] * right.UnderlyingVector[columnIndex];
                 }
                 vector[rowIndex] = value;
             }
@@ -84,7 +84,7 @@ namespace MatrixSolver.Computations.DataTypes
 
         public BigRational Determinant()
         {
-            return this.UnderlyingValues[0, 0] * this.UnderlyingValues[1, 1] - this.UnderlyingValues[0, 1] * this.UnderlyingValues[1, 0];
+            return UnderlyingValues[0, 0] * UnderlyingValues[1, 1] - UnderlyingValues[0, 1] * UnderlyingValues[1, 0];
         }
 
         public override string ToString()
@@ -95,7 +95,7 @@ namespace MatrixSolver.Computations.DataTypes
                 returnString += "[";
                 for (int j = 0; j < Order; j++)
                 {
-                    returnString += this.UnderlyingValues[i, j].ToString();
+                    returnString += UnderlyingValues[i, j].ToString();
                     if (j != Order - 1)
                     {
                         returnString += ", ";
@@ -114,7 +114,7 @@ namespace MatrixSolver.Computations.DataTypes
 
         public override int GetHashCode()
         {
-            return this.UnderlyingValues.GetHashCode();
+            return UnderlyingValues.GetHashCode();
         }
 
         public override bool Equals(object? obj)
@@ -137,7 +137,7 @@ namespace MatrixSolver.Computations.DataTypes
             {
                 for (int j = 0; j < Order; j++)
                 {
-                    if (matrix.UnderlyingValues[i, j] != this.UnderlyingValues[i, j])
+                    if (matrix.UnderlyingValues[i, j] != UnderlyingValues[i, j])
                     {
                         return false;
                     }
@@ -148,12 +148,12 @@ namespace MatrixSolver.Computations.DataTypes
 
         public static bool operator ==(BaseMatrix2x2 left, IMatrix2x2 right)
         {
-            return Object.ReferenceEquals(left, right) || left.Equals(right);
+            return ReferenceEquals(left, right) || left.Equals(right);
         }
 
         public static bool operator !=(BaseMatrix2x2 left, IMatrix2x2 right)
         {
-            return !Object.ReferenceEquals(left, right) && !left.Equals(right);
+            return !ReferenceEquals(left, right) && !left.Equals(right);
         }
     }
 }

@@ -68,7 +68,8 @@ namespace MatrixSolver.Computations.DataTypes.Automata.Canonicalisation
         }
 
         /// <summary>
-        /// A queue based approach to performing the transition additions to the automaton.
+        /// A queue based approach to performing the transition additions to the automaton where we only consider new transitions
+        /// that are reachable from the transitions we have added
         /// </summary>
         internal static Automaton PopulateDFAWithXAndEpsilonTransitionsQueueBased(this Automaton automaton)
         {

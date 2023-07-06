@@ -79,14 +79,15 @@ namespace MatrixSolver.Computations.Maths
             // Setup aliases for a and c
             Func<BigInteger> a = () => matrix.UnderlyingValues[0, 0].Numerator;
             Func<BigInteger> c = () => matrix.UnderlyingValues[1, 0].Numerator;
-            Action PerformSSwitchIfNeeded = () =>
+
+            void PerformSSwitchIfNeeded()
             {
                 if (BigInteger.Abs(a()) < BigInteger.Abs(c()))
                 {
                     matrix.MultiplyLeft(Constants.Matrices.S);
                     matrixProduct.AddLast(GeneratorMatrixIdentifier.SInverse);
                 }
-            };
+            }
 
             PerformSSwitchIfNeeded();
 

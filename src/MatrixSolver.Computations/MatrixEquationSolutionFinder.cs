@@ -6,7 +6,6 @@ using MatrixSolver.Computations.DataTypes;
 using MatrixSolver.Computations.DataTypes.Automata;
 using MatrixSolver.Computations.DataTypes.Automata.Canonicalisation;
 using MatrixSolver.Computations.Maths;
-using MatrixSolver.Computations.Maths.Extensions;
 
 namespace MatrixSolver.Computations
 {
@@ -57,7 +56,7 @@ namespace MatrixSolver.Computations
             // Scale down by gcd(x1, x2) = gcd(y1, y2) = d
             var scaledVectorX = scalar * vectorX;
             var scaledVectorY = scalar * vectorY;
-            // Calcualte A(x)^-1, A(y)
+            // Calculate A(x)^-1, A(y)
             var AxInverse = CalculateMatrixA(scaledVectorX).Inverse();
             var Ay = CalculateMatrixA(scaledVectorY);
 
