@@ -1,8 +1,9 @@
 # Vector Reachability Solver
-This program solves the Vector Reachability problem based on a file containing vectors x, y and a list of matrices M1, ..., Mn.
+This program calculates solutions to the Vector Reachability problem based on a file containing vectors x, y and a list of matrices M1, ..., Mn. This was created as part of my Unviersity Dissertation, using methods described by Igor Potapov a, Pavel Semukhin in their paper titled: [Vector and scalar reachability problems in SL(2,Z)](https://www.sciencedirect.com/science/article/pii/S0022000018308110)
 
 ## Prerequisites
-- You must install the .NET framework version 3.1 or higher.
+- You must install the .NET Core 3.1 SDK
+
 ## How to Vector Reachability Problem solver
 First create a json file with the following properties
 
